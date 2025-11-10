@@ -129,20 +129,29 @@ impl Theme {
     // macOS system theme detection
     #[cfg(target_os = "macos")]
     fn macos_system() -> Self {
-        use cocoa::appkit::NSAppearanceNameVibrantDark;
-        use cocoa::base::id;
-        use objc::{class, msg_send, sel, sel_impl};
+        use objc2::msg_send_id;
+        use objc2::rc::Retained;
+        use objc2_app_kit::{NSAppearance, NSApplication};
+        use objc2_foundation::{MainThreadMarker, NSString};
 
         unsafe {
-            // Get the current appearance
-            let app: id = msg_send![class!(NSApplication), sharedApplication];
-            let appearance: id = msg_send![app, effectiveAppearance];
+            // Get main thread marker (we assume we're on the main thread during theme initialization)
+            let mtm = MainThreadMarker::new_unchecked();
 
-            // Check if we're in dark mode
-            let dark_name: id = NSAppearanceNameVibrantDark;
-            let best_match: id =
-                msg_send![appearance, bestMatchFromAppearancesWithNames: &[dark_name]];
-            let is_dark = !best_match.is_null();
+            // Get the current appearance
+            let app = NSApplication::sharedApplication(mtm);
+            let appearance: Option<Retained<NSAppearance>> =
+                msg_send_id![&app, effectiveAppearance];
+
+            // Check if we're in dark mode by checking the appearance name
+            let is_dark = if let Some(appearance) = appearance {
+                let name: Retained<NSString> = msg_send_id![&appearance, name];
+                let name_str = name.to_string();
+                // Check if the appearance name contains "Dark"
+                name_str.contains("Dark") || name_str.contains("dark")
+            } else {
+                false
+            };
 
             // Try to get system accent color
             let accent_color = Self::get_macos_accent_color();
@@ -153,28 +162,33 @@ impl Theme {
 
     #[cfg(target_os = "macos")]
     fn get_macos_accent_color() -> Option<u32> {
-        use cocoa::base::id;
-        use objc::{class, msg_send, sel, sel_impl};
+        use objc2::rc::Retained;
+        use objc2::{ClassType, msg_send, msg_send_id};
+        use objc2_app_kit::{NSColor, NSColorSpace};
 
         unsafe {
             // Get the system accent color (controlAccentColor)
-            let color: id = msg_send![class!(NSColor), controlAccentColor];
-            if color.is_null() {
-                return None;
-            }
+            let color: Option<Retained<NSColor>> =
+                msg_send_id![NSColor::class(), controlAccentColor];
+            let color = color?;
 
             // Convert to RGB color space
-            let color_space: id = msg_send![class!(NSColorSpace), sRGBColorSpace];
-            let rgb_color: id = msg_send![color, colorUsingColorSpace: color_space];
-            if rgb_color.is_null() {
-                return None;
-            }
+            let srgb_space = NSColorSpace::sRGBColorSpace();
+            let rgb_color: Option<Retained<NSColor>> =
+                msg_send_id![&color, colorUsingColorSpace: &*srgb_space];
+            let rgb_color = rgb_color?;
 
             // Get RGB components
             let mut r: f64 = 0.0;
             let mut g: f64 = 0.0;
             let mut b: f64 = 0.0;
-            let _: () = msg_send![rgb_color, getRed:&mut r green:&mut g blue:&mut b alpha:std::ptr::null_mut::<f64>()];
+            let _: () = msg_send![
+                &rgb_color,
+                getRed: &mut r,
+                green: &mut g,
+                blue: &mut b,
+                alpha: std::ptr::null_mut::<f64>()
+            ];
 
             // Convert to hex
             let r_int = (r * 255.0) as u32;
@@ -1044,7 +1058,7 @@ impl DateInputDialog {
         caret_visible: bool,
         window: &Window,
         cx: &mut Context<Self>,
-    ) -> impl IntoElement {
+    ) -> impl IntoElement + use<> {
         // Check if this field currently has keyboard focus
         let is_focused = focus_handle.is_focused(window);
 
