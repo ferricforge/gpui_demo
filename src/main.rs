@@ -129,7 +129,7 @@ impl Theme {
     // macOS system theme detection
     #[cfg(target_os = "macos")]
     fn macos_system() -> Self {
-        use objc2::msg_send_id;
+        use objc2::msg_send;
         use objc2::rc::Retained;
         use objc2_app_kit::{NSAppearance, NSApplication};
         use objc2_foundation::{MainThreadMarker, NSString};
@@ -141,11 +141,11 @@ impl Theme {
             // Get the current appearance
             let app = NSApplication::sharedApplication(mtm);
             let appearance: Option<Retained<NSAppearance>> =
-                msg_send_id![&app, effectiveAppearance];
+                msg_send![&app, effectiveAppearance];
 
             // Check if we're in dark mode by checking the appearance name
             let is_dark = if let Some(appearance) = appearance {
-                let name: Retained<NSString> = msg_send_id![&appearance, name];
+                let name: Retained<NSString> = msg_send![&appearance, name];
                 let name_str = name.to_string();
                 // Check if the appearance name contains "Dark"
                 name_str.contains("Dark") || name_str.contains("dark")
@@ -163,19 +163,19 @@ impl Theme {
     #[cfg(target_os = "macos")]
     fn get_macos_accent_color() -> Option<u32> {
         use objc2::rc::Retained;
-        use objc2::{ClassType, msg_send, msg_send_id};
+        use objc2::{ClassType, msg_send,};
         use objc2_app_kit::{NSColor, NSColorSpace};
 
         unsafe {
             // Get the system accent color (controlAccentColor)
             let color: Option<Retained<NSColor>> =
-                msg_send_id![NSColor::class(), controlAccentColor];
+                msg_send![NSColor::class(), controlAccentColor];
             let color = color?;
 
             // Convert to RGB color space
             let srgb_space = NSColorSpace::sRGBColorSpace();
             let rgb_color: Option<Retained<NSColor>> =
-                msg_send_id![&color, colorUsingColorSpace: &*srgb_space];
+                msg_send![&color, colorUsingColorSpace: &*srgb_space];
             let rgb_color = rgb_color?;
 
             // Get RGB components
