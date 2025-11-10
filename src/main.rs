@@ -19,20 +19,21 @@
 /* Cargo.toml:
 
 [package]
-name = "gpui"
+name = "gpui_demo"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 
 [dependencies]
 gpui = "0.2"
-native-dialog = "0.7"
+native-dialog = "0.9"
 
 [target.'cfg(target_os = "macos")'.dependencies]
-cocoa = "0.25"
-objc = "0.2"
+objc2 = "0.6"
+objc2-foundation = { version = "0.3", features = ["NSString"] }
+objc2-app-kit = { version = "0.3", features = ["NSAppearance", "NSColor", "NSColorSpace"] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
-windows = { version = "0.58", features = ["Win32_UI_WindowsAndMessaging", "Win32_Graphics_Dwm", "Win32_System_Registry", "Win32_Foundation"] }
+windows = { version = "0.62", features = ["Win32_UI_WindowsAndMessaging", "Win32_Graphics_Dwm", "Win32_System_Registry", "Win32_Foundation"] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 gtk4 = "0.10"
@@ -140,8 +141,7 @@ impl Theme {
 
             // Get the current appearance
             let app = NSApplication::sharedApplication(mtm);
-            let appearance: Option<Retained<NSAppearance>> =
-                msg_send![&app, effectiveAppearance];
+            let appearance: Option<Retained<NSAppearance>> = msg_send![&app, effectiveAppearance];
 
             // Check if we're in dark mode by checking the appearance name
             let is_dark = if let Some(appearance) = appearance {
@@ -163,13 +163,12 @@ impl Theme {
     #[cfg(target_os = "macos")]
     fn get_macos_accent_color() -> Option<u32> {
         use objc2::rc::Retained;
-        use objc2::{ClassType, msg_send,};
+        use objc2::{ClassType, msg_send};
         use objc2_app_kit::{NSColor, NSColorSpace};
 
         unsafe {
             // Get the system accent color (controlAccentColor)
-            let color: Option<Retained<NSColor>> =
-                msg_send![NSColor::class(), controlAccentColor];
+            let color: Option<Retained<NSColor>> = msg_send![NSColor::class(), controlAccentColor];
             let color = color?;
 
             // Convert to RGB color space
@@ -623,11 +622,17 @@ fn show_about(_: &ShowAbout, _cx: &mut App) {
     // - macOS: Uses NSAlert (Cocoa framework)
     // - Windows: Uses MessageBox (Win32 API)
     // - Linux: Uses GTK MessageDialog or zenity fallback
+    //
+    // API (version 0.9):
+    // - DialogBuilder::message() creates a message dialog builder
+    // - .set_level() sets Info/Warning/Error type
+    // - .alert() shows dialog and blocks until closed (synchronous)
+    // - .confirm() shows yes/no dialog and returns bool (synchronous)
 
-    use native_dialog::{MessageDialog, MessageType};
+    use native_dialog::{DialogBuilder, MessageLevel};
 
-    MessageDialog::new()
-        .set_type(MessageType::Info)
+    let _ = DialogBuilder::message()
+        .set_level(MessageLevel::Info)
         .set_title("About GPUI Biorhythm Calculator")
         .set_text(
             "GPUI Biorhythm Calculator v0.1.0\n\n\
@@ -640,8 +645,7 @@ fn show_about(_: &ShowAbout, _cx: &mut App) {
              Built with GPUI - GPU-accelerated UI for Rust\n\
              https://github.com/zed-industries/gpui",
         )
-        .show_alert()
-        .unwrap_or_else(|e| eprintln!("Failed to show about dialog: {}", e));
+        .alert();
 }
 
 // =============================================================================
