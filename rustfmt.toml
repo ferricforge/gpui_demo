@@ -1,0 +1,12 @@
+edition = "2024"
+
+# Reorder imports alphabetically (stable)
+reorder_imports = true
+
+# Reorder import groups (stable)
+reorder_modules = true
+
+max_width = 100
+array_width = 1
+
+fn_params_layout = "Vertical"

@@ -141,11 +141,17 @@ impl Theme {
 
             // Get the current appearance
             let app = NSApplication::sharedApplication(mtm);
-            let appearance: Option<Retained<NSAppearance>> = msg_send![&app, effectiveAppearance];
+            let appearance: Option<Retained<NSAppearance>> = msg_send![
+                &app,
+                effectiveAppearance
+            ];
 
             // Check if we're in dark mode by checking the appearance name
             let is_dark = if let Some(appearance) = appearance {
-                let name: Retained<NSString> = msg_send![&appearance, name];
+                let name: Retained<NSString> = msg_send![
+                    &appearance,
+                    name
+                ];
                 let name_str = name.to_string();
                 // Check if the appearance name contains "Dark"
                 name_str.contains("Dark") || name_str.contains("dark")
@@ -168,7 +174,10 @@ impl Theme {
 
         unsafe {
             // Get the system accent color (controlAccentColor)
-            let color: Option<Retained<NSColor>> = msg_send![NSColor::class(), controlAccentColor];
+            let color: Option<Retained<NSColor>> = msg_send![
+                NSColor::class(),
+                controlAccentColor
+            ];
             let color = color?;
 
             // Convert to RGB color space
@@ -202,7 +211,10 @@ impl Theme {
         Self::macos_with_preferences(false, None)
     }
 
-    fn macos_with_preferences(is_dark: bool, accent_color: Option<u32>) -> Self {
+    fn macos_with_preferences(
+        is_dark: bool,
+        accent_color: Option<u32>,
+    ) -> Self {
         // Use system accent color if available, otherwise default to macOS blue
         let accent = accent_color.unwrap_or(0x007AFF);
         let accent_hover = Self::darken_color(accent, 0.9);
@@ -277,7 +289,10 @@ impl Theme {
     }
 
     // Helper function to darken a color
-    fn darken_color(color: u32, factor: f32) -> u32 {
+    fn darken_color(
+        color: u32,
+        factor: f32,
+    ) -> u32 {
         let r = ((color >> 16) & 0xFF) as f32;
         let g = ((color >> 8) & 0xFF) as f32;
         let b = (color & 0xFF) as f32;
@@ -320,7 +335,10 @@ impl Theme {
         Self::windows_with_preferences(false, None)
     }
 
-    fn windows_with_preferences(is_dark: bool, accent_color: Option<u32>) -> Self {
+    fn windows_with_preferences(
+        is_dark: bool,
+        accent_color: Option<u32>,
+    ) -> Self {
         let accent = accent_color.unwrap_or(0x0078D4);
         let accent_hover = Self::darken_color(accent, 0.9);
 
@@ -444,7 +462,10 @@ impl Theme {
         Self::linux_with_preferences(false, None)
     }
 
-    fn linux_with_preferences(is_dark: bool, accent_color: Option<u32>) -> Self {
+    fn linux_with_preferences(
+        is_dark: bool,
+        accent_color: Option<u32>,
+    ) -> Self {
         let accent = accent_color.unwrap_or(0x3584E4);
         let accent_hover = Self::darken_color(accent, 0.9);
 
@@ -595,17 +616,28 @@ macro_rules! styled_button {
 
 // Define actions in the "biorhythm" namespace
 // These create zero-sized types that can be used as actions
-actions!(biorhythm, [Quit, ShowAbout]);
+actions!(
+    biorhythm,
+    [
+        Quit, ShowAbout
+    ]
+);
 
 // Action handler for the Quit action
 // Takes a reference to the action (often unused) and mutable app context
-fn quit(_: &Quit, cx: &mut App) {
+fn quit(
+    _: &Quit,
+    cx: &mut App,
+) {
     cx.quit(); // Terminate the application gracefully
 }
 
 // Action handler for the ShowAbout action
 // Displays a native dialog with application information
-fn show_about(_: &ShowAbout, _cx: &mut App) {
+fn show_about(
+    _: &ShowAbout,
+    _cx: &mut App,
+) {
     // TUTORIAL: Native Dialogs
     // ------------------------
     // While GPUI excels at custom UI, sometimes you want native OS dialogs for
@@ -652,12 +684,19 @@ fn show_about(_: &ShowAbout, _cx: &mut App) {
 // BIORHYTHM CALCULATIONS
 // =============================================================================
 
-fn calculate_biorhythm(days_since_birth: i32, cycle_length: f64) -> f64 {
+fn calculate_biorhythm(
+    days_since_birth: i32,
+    cycle_length: f64,
+) -> f64 {
     let angle = 2.0 * std::f64::consts::PI * (days_since_birth as f64) / cycle_length;
     angle.sin()
 }
 
-fn days_between_dates(year: i32, month: u32, day: u32) -> i32 {
+fn days_between_dates(
+    year: i32,
+    month: u32,
+    day: u32,
+) -> i32 {
     // Simplified calculation
     let birth_days = year * 365 + (month as i32) * 30 + day as i32;
     let current_year = 2025;
@@ -823,7 +862,11 @@ impl DateInputDialog {
         true
     }
 
-    fn submit_date(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+    fn submit_date(
+        &mut self,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
         // Validate the date
         if self.validate_date() {
             // Parse the validated date
@@ -848,11 +891,21 @@ impl DateInputDialog {
         }
     }
 
-    fn on_ok_clicked(&mut self, _: &MouseUpEvent, window: &mut Window, cx: &mut Context<Self>) {
+    fn on_ok_clicked(
+        &mut self,
+        _: &MouseUpEvent,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
         self.submit_date(window, cx);
     }
 
-    fn on_cancel_clicked(&mut self, _: &MouseUpEvent, window: &mut Window, cx: &mut Context<Self>) {
+    fn on_cancel_clicked(
+        &mut self,
+        _: &MouseUpEvent,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
         if self.is_initial {
             // If this is the initial dialog and user cancels, quit the app
             cx.quit();
@@ -877,7 +930,11 @@ impl DateInputDialog {
 // - Return elements that implement IntoElement
 // - GPUI compares old and new descriptions and updates only what changed
 impl Render for DateInputDialog {
-    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(
+        &mut self,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> impl IntoElement {
         // TUTORIAL: Implementing Cursor Blink Animation
         // ---------------------------------------------
         // To create a blinking cursor that toggles every 500ms:
@@ -1244,11 +1301,20 @@ impl BiorhythmChart {
         }
     }
 
-    fn set_handle(&mut self, handle: WindowHandle<BiorhythmChart>) {
+    fn set_handle(
+        &mut self,
+        handle: WindowHandle<BiorhythmChart>,
+    ) {
         self.self_handle = Some(handle);
     }
 
-    fn update_birthdate(&mut self, year: i32, month: u32, day: u32, cx: &mut Context<Self>) {
+    fn update_birthdate(
+        &mut self,
+        year: i32,
+        month: u32,
+        day: u32,
+        cx: &mut Context<Self>,
+    ) {
         self.birthdate = Some((year, month, day));
         cx.notify(); // Trigger a re-render
     }
@@ -1283,7 +1349,11 @@ impl BiorhythmChart {
 }
 
 impl Render for BiorhythmChart {
-    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(
+        &mut self,
+        _window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> impl IntoElement {
         let (days_since_birth, birthdate_str) = if let Some((year, month, day)) = self.birthdate {
             (
                 days_between_dates(year, month, day),
@@ -1367,7 +1437,11 @@ impl Render for BiorhythmChart {
 }
 
 impl BiorhythmChart {
-    fn legend_item(&self, label: String, color: Hsla) -> impl IntoElement {
+    fn legend_item(
+        &self,
+        label: String,
+        color: Hsla,
+    ) -> impl IntoElement {
         div()
             .flex()
             .gap_2()
@@ -1381,7 +1455,10 @@ impl BiorhythmChart {
             )
     }
 
-    fn render_chart(&self, days_since_birth: i32) -> impl IntoElement {
+    fn render_chart(
+        &self,
+        days_since_birth: i32,
+    ) -> impl IntoElement {
         div()
             .flex()
             .flex_col()
@@ -1398,7 +1475,10 @@ impl BiorhythmChart {
             .child(self.render_chart_lines(days_since_birth))
     }
 
-    fn render_chart_lines(&self, days_since_birth: i32) -> impl IntoElement {
+    fn render_chart_lines(
+        &self,
+        days_since_birth: i32,
+    ) -> impl IntoElement {
         let chart_width = 700.0;
         let chart_height = 300.0;
         let days_to_show = 33; // Match the longest biorhythm cycle (intellectual)
@@ -1668,24 +1748,26 @@ fn main() {
         // Create application menu
         // On macOS: This becomes the "Biorhythm Calculator" menu in the menu bar
         // On Windows/Linux: This could be organized differently (e.g., File, Help menus)
-        cx.set_menus(vec![Menu {
-            name: "Biorhythm Calculator".into(),
-            items: vec![
-                // About menu item - triggers ShowAbout action
-                // macOS: Standard first item in application menu
-                // Windows/Linux: Would typically go in Help menu
-                MenuItem::action("About Biorhythm Calculator", ShowAbout),
-                MenuItem::separator(),
-                // Services submenu - macOS system feature
-                // On macOS: System automatically populates this with available services
-                // On Windows/Linux: This is ignored (platform-specific)
-                MenuItem::os_submenu("Services", SystemMenuType::Services),
-                MenuItem::separator(),
-                // Quit menu item - triggers Quit action
-                // Also bound to Cmd+Q (macOS) / Ctrl+Q (Linux) / Alt+F4 (Windows)
-                MenuItem::action("Quit", Quit),
-            ],
-        }]);
+        cx.set_menus(vec![
+            Menu {
+                name: "Biorhythm Calculator".into(),
+                items: vec![
+                    // About menu item - triggers ShowAbout action
+                    // macOS: Standard first item in application menu
+                    // Windows/Linux: Would typically go in Help menu
+                    MenuItem::action("About Biorhythm Calculator", ShowAbout),
+                    MenuItem::separator(),
+                    // Services submenu - macOS system feature
+                    // On macOS: System automatically populates this with available services
+                    // On Windows/Linux: This is ignored (platform-specific)
+                    MenuItem::os_submenu("Services", SystemMenuType::Services),
+                    MenuItem::separator(),
+                    // Quit menu item - triggers Quit action
+                    // Also bound to Cmd+Q (macOS) / Ctrl+Q (Linux) / Alt+F4 (Windows)
+                    MenuItem::action("Quit", Quit),
+                ],
+            },
+        ]);
 
         // TUTORIAL: Creating Windows
         // -------------------------
