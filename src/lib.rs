@@ -2,7 +2,6 @@ pub mod components;
 pub mod preferences;
 
 use gpui::*;
-use gpui_component::*;
 
 actions!(gpui_demo, [Quit]);
 
