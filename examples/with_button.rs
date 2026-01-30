@@ -15,22 +15,10 @@ fn main() {
         let prefs = WindowPreferences::default();
 
         cx.spawn(async move |cx| {
-            // Get the primary display to calculate centered position
-            let displays = cx.update(|cx| cx.displays())?;
-            let primary_display = displays
-                .first()
-                .ok_or_else(|| anyhow::anyhow!("No display found"))?;
-
-            let origin = if prefs.center_on_open {
-                prefs.calculate_centered_origin(primary_display)
-            } else {
-                Point::default()
-            };
-
             let _window_handle = cx.open_window(
                 WindowOptions {
                     window_bounds: Some(WindowBounds::Windowed(Bounds {
-                        origin,
+                        origin: Point::default(),
                         size: prefs.size,
                     })),
                     ..Default::default()

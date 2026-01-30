@@ -1,5 +1,5 @@
 use gpui::*;
-use gpui_component::Root;
+use gpui_component::StyledExt;
 
 use crate::quit;
 use crate::Quit;
