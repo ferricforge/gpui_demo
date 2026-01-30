@@ -1,5 +1,5 @@
 use gpui::*;
-use gpui_component::{button::*, Root};
+use gpui_component::{button::*, Root, StyledExt};
 use gpui_demo::{components::Window, preferences::WindowPreferences, setup_app};
 
 fn click_handler(_event: &ClickEvent, _window: &mut gpui::Window, _cx: &mut App) {
@@ -21,6 +21,7 @@ fn main() {
                         origin: Point::default(),
                         size: prefs.size,
                     })),
+                    center: true,
                     ..Default::default()
                 },
                 |window, cx| {
@@ -30,6 +31,8 @@ fn main() {
                         // Add content to the window
                         win.set_content(
                             div()
+                                .v_flex()
+                                .gap_2()
                                 .child("Hello, World!")
                                 .child(
                                     Button::new("ok")

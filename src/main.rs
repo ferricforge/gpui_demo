@@ -17,6 +17,7 @@ fn main() {
                         origin: Point::default(),
                         size: prefs.size,
                     })),
+                    center: true,
                     ..Default::default()
                 },
                 |window, cx| {
