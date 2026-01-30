@@ -17,11 +17,7 @@ fn main() {
         cx.spawn(async move |cx| {
             let _window_handle = cx.open_window(
                 WindowOptions {
-                    window_bounds: Some(WindowBounds::Windowed(Bounds {
-                        origin: Point::default(),
-                        size: prefs.size,
-                    })),
-                    center: true,
+                    window_bounds: Some(WindowBounds::Windowed(Bounds::centered(None, prefs.size, cx))),
                     ..Default::default()
                 },
                 |window, cx| {
