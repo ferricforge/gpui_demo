@@ -9,20 +9,24 @@ fn click_handler(_event: &ClickEvent, _window: &mut gpui::Window, _cx: &mut App)
 fn main() {
     let app = Application::new();
 
-    app.run(move |cx: &mut App| {
-        setup_app(cx);
+    app.run(move |app_cx: &mut App| {
+        setup_app(app_cx);
 
         let prefs = WindowPreferences::default();
 
-        cx.spawn(async move |cx| {
-            let _window_handle = cx.open_window(
+        app_cx.spawn(async move |async_cx| {
+            let bounds = async_cx.update(|app_cx: &mut App| {
+                Bounds::centered(None, prefs.size, app_cx)
+            })?;
+
+            let _window_handle = async_cx.open_window(
                 WindowOptions {
-                    window_bounds: Some(WindowBounds::Windowed(Bounds::centered(None, prefs.size, cx))),
+                    window_bounds: Some(WindowBounds::Windowed(bounds)),
                     ..Default::default()
                 },
-                |window, cx| {
-                    let view = cx.new(|cx| {
-                        let mut win = Window::new(cx);
+                |window: &mut gpui::Window, window_cx| {
+                    let view = window_cx.new(|view_cx: &mut Context<Window>| {
+                        let mut win = Window::new(view_cx);
 
                         // Add content to the window
                         win.set_content(
@@ -40,7 +44,7 @@ fn main() {
 
                         win
                     });
-                    cx.new(|cx| Root::new(view, window, cx))
+                    window_cx.new(|root_cx| Root::new(view, window, root_cx))
                 },
             )?;
 
