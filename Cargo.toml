@@ -1,21 +1,17 @@
 [package]
 name = "gpui_demo"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
+
+[lib]
+name = "gpui_demo"
+path = "src/lib.rs"
+
+[[bin]]
+name = "gpui_demo"
+path = "src/main.rs"
 
 [dependencies]
 anyhow = "1.0.100"
 gpui = "0.2"
 gpui-component = "0.5.0"
-native-dialog = "0.9"
-
-[target.'cfg(target_os = "macos")'.dependencies]
-objc2 = "0.6"
-objc2-foundation = { version = "0.3", features = ["NSString"] }
-objc2-app-kit = { version = "0.3", features = ["NSAppearance", "NSColor", "NSColorSpace"] }
-
-[target.'cfg(target_os = "windows")'.dependencies]
-windows = { version = "0.62", features = ["Win32_UI_WindowsAndMessaging", "Win32_Graphics_Dwm", "Win32_System_Registry", "Win32_Foundation"] }
-
-[target.'cfg(target_os = "linux")'.dependencies]
-gtk4 = "0.10"
