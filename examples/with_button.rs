@@ -1,29 +1,31 @@
 use gpui::*;
 use gpui_component::{
+    Root, StyledExt,
     button::*,
     input::{Input, InputState},
-    Root,
-    StyledExt,
 };
-use gpui_demo::{preferences::WindowPreferences, quit, setup_app, Quit};
+use gpui_demo::{Quit, preferences::WindowPreferences, quit, setup_app};
 
 struct ButtonExample {
-    input_state: Entity<InputState>,
+    text_input: Entity<InputState>,
     _window_close_subscription: Option<Subscription>,
 }
 
 impl ButtonExample {
-    fn new(window: &mut gpui::Window, view_cx: &mut Context<Self>) -> Self {
+    fn new(
+        window: &mut Window,
+        view_cx: &mut Context<Self>,
+    ) -> Self {
         let subscription = view_cx.on_window_closed(|app_cx: &mut App| {
             println!("Window closed callback!");
             quit(&Quit, app_cx);
         });
 
-        let input_state =
-            view_cx.new(|input_cx: &mut Context<InputState>| InputState::new(window, input_cx));
+        let text_input = view_cx
+            .new(|input_cx| InputState::new(window, input_cx).placeholder("Enter text here..."));
 
         Self {
-            input_state,
+            text_input,
             _window_close_subscription: Some(subscription),
         }
     }
@@ -35,10 +37,9 @@ impl ButtonExample {
         view_cx: &mut Context<Self>,
     ) {
         println!("Clearing input!");
-        self.input_state
-            .update(view_cx, |input: &mut InputState, input_cx| {
-                input.set_value("", window, input_cx);
-            });
+        self.text_input.update(view_cx, |input, input_cx| {
+            input.set_value("", window, input_cx);
+        });
     }
 }
 
@@ -60,7 +61,7 @@ impl Render for ButtonExample {
                     .gap_2()
                     .items_center()
                     .child("Enter text:")
-                    .child(Input::new(&self.input_state)),
+                    .child(Input::new(&self.text_input).w_64()),
             )
             .child(
                 Button::new("clear")
@@ -79,25 +80,26 @@ fn main() {
 
         let prefs = WindowPreferences::default();
 
-        app_cx.spawn(async move |async_cx| {
-            let bounds =
-                async_cx.update(|app_cx: &mut App| Bounds::centered(None, prefs.size, app_cx))?;
+        app_cx
+            .spawn(async move |async_cx| {
+                let bounds = async_cx
+                    .update(|app_cx: &mut App| Bounds::centered(None, prefs.size, app_cx))?;
 
-            let _window_handle = async_cx.open_window(
-                WindowOptions {
-                    window_bounds: Some(WindowBounds::Windowed(bounds)),
-                    ..Default::default()
-                },
-                |window: &mut gpui::Window, window_cx| {
-                    let view = window_cx.new(|view_cx: &mut Context<ButtonExample>| {
-                        ButtonExample::new(window, view_cx)
-                    });
-                    window_cx.new(|root_cx| Root::new(view, window, root_cx))
-                },
-            )?;
+                let _window_handle = async_cx.open_window(
+                    WindowOptions {
+                        window_bounds: Some(WindowBounds::Windowed(bounds)),
+                        ..Default::default()
+                    },
+                    |window: &mut gpui::Window, window_cx| {
+                        let view = window_cx.new(|view_cx: &mut Context<ButtonExample>| {
+                            ButtonExample::new(window, view_cx)
+                        });
+                        window_cx.new(|root_cx| Root::new(view, window, root_cx))
+                    },
+                )?;
 
-            Ok::<_, anyhow::Error>(())
-        })
-        .detach();
+                Ok::<_, anyhow::Error>(())
+            })
+            .detach();
     });
 }
