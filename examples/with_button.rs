@@ -13,13 +13,14 @@ struct ButtonExample {
 }
 
 impl ButtonExample {
-    fn new(view_cx: &mut Context<Self>) -> Self {
+    fn new(window: &mut gpui::Window, view_cx: &mut Context<Self>) -> Self {
         let subscription = view_cx.on_window_closed(|app_cx: &mut App| {
             println!("Window closed callback!");
             quit(&Quit, app_cx);
         });
 
-        let input_state = view_cx.new(|_| InputState::new());
+        let input_state =
+            view_cx.new(|input_cx: &mut Context<InputState>| InputState::new(window, input_cx));
 
         Self {
             input_state,
@@ -34,9 +35,10 @@ impl ButtonExample {
         view_cx: &mut Context<Self>,
     ) {
         println!("Clearing input!");
-        self.input_state.update(view_cx, |input: &mut InputState, input_cx| {
-            input.set_text("", window, input_cx);
-        });
+        self.input_state
+            .update(view_cx, |input: &mut InputState, input_cx| {
+                input.clear(window, input_cx);
+            });
     }
 }
 
@@ -58,7 +60,7 @@ impl Render for ButtonExample {
                     .gap_2()
                     .items_center()
                     .child("Enter text:")
-                    .child(Input::new(self.input_state.clone())),
+                    .child(Input::new(&self.input_state)),
             )
             .child(
                 Button::new("clear")
@@ -87,8 +89,9 @@ fn main() {
                     ..Default::default()
                 },
                 |window: &mut gpui::Window, window_cx| {
-                    let view = window_cx
-                        .new(|view_cx: &mut Context<ButtonExample>| ButtonExample::new(view_cx));
+                    let view = window_cx.new(|view_cx: &mut Context<ButtonExample>| {
+                        ButtonExample::new(window, view_cx)
+                    });
                     window_cx.new(|root_cx| Root::new(view, window, root_cx))
                 },
             )?;
