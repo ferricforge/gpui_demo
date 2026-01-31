@@ -37,7 +37,7 @@ impl ButtonExample {
         println!("Clearing input!");
         self.input_state
             .update(view_cx, |input: &mut InputState, input_cx| {
-                input.clear(window, input_cx);
+                input.set_value("", window, input_cx);
             });
     }
 }
