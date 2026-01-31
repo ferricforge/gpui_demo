@@ -1,9 +1,14 @@
 use gpui::*;
-use gpui_component::{button::*, input::TextInput, Root, StyledExt};
-use gpui_demo::{preferences::WindowPreferences, setup_app, quit, Quit};
+use gpui_component::{
+    button::*,
+    input::{Input, InputState},
+    Root,
+    StyledExt,
+};
+use gpui_demo::{preferences::WindowPreferences, quit, setup_app, Quit};
 
 struct ButtonExample {
-    text_input: Entity<TextInput>,
+    input_state: Entity<InputState>,
     _window_close_subscription: Option<Subscription>,
 }
 
@@ -14,10 +19,10 @@ impl ButtonExample {
             quit(&Quit, app_cx);
         });
 
-        let text_input = view_cx.new(|_| TextInput::new());
+        let input_state = view_cx.new(|_| InputState::new());
 
         Self {
-            text_input,
+            input_state,
             _window_close_subscription: Some(subscription),
         }
     }
@@ -29,7 +34,7 @@ impl ButtonExample {
         view_cx: &mut Context<Self>,
     ) {
         println!("Clearing input!");
-        self.text_input.update(view_cx, |input, input_cx| {
+        self.input_state.update(view_cx, |input: &mut InputState, input_cx| {
             input.set_text("", window, input_cx);
         });
     }
@@ -53,7 +58,7 @@ impl Render for ButtonExample {
                     .gap_2()
                     .items_center()
                     .child("Enter text:")
-                    .child(self.text_input.clone()),
+                    .child(Input::new(self.input_state.clone())),
             )
             .child(
                 Button::new("clear")
@@ -73,9 +78,8 @@ fn main() {
         let prefs = WindowPreferences::default();
 
         app_cx.spawn(async move |async_cx| {
-            let bounds = async_cx.update(|app_cx: &mut App| {
-                Bounds::centered(None, prefs.size, app_cx)
-            })?;
+            let bounds =
+                async_cx.update(|app_cx: &mut App| Bounds::centered(None, prefs.size, app_cx))?;
 
             let _window_handle = async_cx.open_window(
                 WindowOptions {
@@ -83,10 +87,8 @@ fn main() {
                     ..Default::default()
                 },
                 |window: &mut gpui::Window, window_cx| {
-                    let view =
-                        window_cx.new(|view_cx: &mut Context<ButtonExample>| {
-                            ButtonExample::new(view_cx)
-                        });
+                    let view = window_cx
+                        .new(|view_cx: &mut Context<ButtonExample>| ButtonExample::new(view_cx));
                     window_cx.new(|root_cx| Root::new(view, window, root_cx))
                 },
             )?;
