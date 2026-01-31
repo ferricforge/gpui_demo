@@ -1,9 +1,67 @@
 use gpui::*;
-use gpui_component::{button::*, Root, StyledExt};
-use gpui_demo::{components::Window, preferences::WindowPreferences, setup_app};
+use gpui_component::{button::*, input::TextInput, Root, StyledExt};
+use gpui_demo::{preferences::WindowPreferences, setup_app, quit, Quit};
 
-fn click_handler(_event: &ClickEvent, _window: &mut gpui::Window, _cx: &mut App) {
-    println!("Clicked!");
+struct ButtonExample {
+    text_input: Entity<TextInput>,
+    _window_close_subscription: Option<Subscription>,
+}
+
+impl ButtonExample {
+    fn new(view_cx: &mut Context<Self>) -> Self {
+        let subscription = view_cx.on_window_closed(|app_cx: &mut App| {
+            println!("Window closed callback!");
+            quit(&Quit, app_cx);
+        });
+
+        let text_input = view_cx.new(|_| TextInput::new());
+
+        Self {
+            text_input,
+            _window_close_subscription: Some(subscription),
+        }
+    }
+
+    fn clear_input(
+        &mut self,
+        _: &ClickEvent,
+        window: &mut gpui::Window,
+        view_cx: &mut Context<Self>,
+    ) {
+        println!("Clearing input!");
+        self.text_input.update(view_cx, |input, input_cx| {
+            input.set_text("", window, input_cx);
+        });
+    }
+}
+
+impl Render for ButtonExample {
+    fn render(
+        &mut self,
+        _window: &mut gpui::Window,
+        view_cx: &mut Context<Self>,
+    ) -> impl IntoElement {
+        div()
+            .v_flex()
+            .gap_4()
+            .size_full()
+            .items_center()
+            .justify_center()
+            .child(
+                div()
+                    .h_flex()
+                    .gap_2()
+                    .items_center()
+                    .child("Enter text:")
+                    .child(self.text_input.clone()),
+            )
+            .child(
+                Button::new("clear")
+                    .primary()
+                    .label("Clear")
+                    .on_click(view_cx.listener(Self::clear_input)),
+            )
+    }
 }
 
 fn main() {
@@ -25,25 +83,10 @@ fn main() {
                     ..Default::default()
                 },
                 |window: &mut gpui::Window, window_cx| {
-                    let view = window_cx.new(|view_cx: &mut Context<Window>| {
-                        let mut win = Window::new(view_cx);
-
-                        // Add content to the window
-                        win.set_content(
-                            div()
-                                .v_flex()
-                                .gap_2()
-                                .child("Hello, World!")
-                                .child(
-                                    Button::new("ok")
-                                        .primary()
-                                        .label("Let's Go!")
-                                        .on_click(click_handler),
-                                ),
-                        );
-
-                        win
-                    });
+                    let view =
+                        window_cx.new(|view_cx: &mut Context<ButtonExample>| {
+                            ButtonExample::new(view_cx)
+                        });
                     window_cx.new(|root_cx| Root::new(view, window, root_cx))
                 },
             )?;
