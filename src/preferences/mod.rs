@@ -1,4 +1,4 @@
-use gpui::{px, Pixels, Size};
+use gpui::{Pixels, Size, px};
 
 #[derive(Debug, Clone, Copy)]
 pub struct WindowPreferences {
@@ -19,7 +19,10 @@ impl Default for WindowPreferences {
 }
 
 impl WindowPreferences {
-    pub fn new(width: impl Into<Pixels>, height: impl Into<Pixels>) -> Self {
+    pub fn new(
+        width: impl Into<Pixels>,
+        height: impl Into<Pixels>,
+    ) -> Self {
         Self {
             size: Size {
                 width: width.into(),

@@ -10,24 +10,25 @@ fn main() {
 
         let prefs = WindowPreferences::default();
 
-        app_cx.spawn(async move |async_cx| {
-            let bounds = async_cx.update(|app_cx: &mut App| {
-                Bounds::centered(None, prefs.size, app_cx)
-            })?;
+        app_cx
+            .spawn(async move |async_cx| {
+                let bounds = async_cx
+                    .update(|app_cx: &mut App| Bounds::centered(None, prefs.size, app_cx))?;
 
-            let _window_handle = async_cx.open_window(
-                WindowOptions {
-                    window_bounds: Some(WindowBounds::Windowed(bounds)),
-                    ..Default::default()
-                },
-                |window: &mut gpui::Window, window_cx| {
-                    let view = window_cx.new(|view_cx: &mut Context<Window>| Window::new(view_cx));
-                    window_cx.new(|root_cx| Root::new(view, window, root_cx))
-                },
-            )?;
+                let _window_handle = async_cx.open_window(
+                    WindowOptions {
+                        window_bounds: Some(WindowBounds::Windowed(bounds)),
+                        ..Default::default()
+                    },
+                    |window: &mut gpui::Window, window_cx| {
+                        let view =
+                            window_cx.new(|view_cx: &mut Context<Window>| Window::new(view_cx));
+                        window_cx.new(|root_cx| Root::new(view, window, root_cx))
+                    },
+                )?;
 
-            Ok::<_, anyhow::Error>(())
-        })
-        .detach();
+                Ok::<_, anyhow::Error>(())
+            })
+            .detach();
     });
 }
