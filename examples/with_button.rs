@@ -25,7 +25,9 @@ impl ButtonExample {
         let text_input = view_cx
             .new(|input_cx| InputState::new(window, input_cx).placeholder("Enter text here..."));
 
-        view_cx.focus(&text_input);
+        text_input.update(view_cx, |input, _input_cx| {
+            input.focus(window);
+        });
 
         Self {
             text_input,
