@@ -1,6 +1,7 @@
 use gpui::*;
 use gpui_component::{
     Root,
+    StyledExt,
     button::*,
     input::{Input, InputState},
 };
@@ -12,7 +13,10 @@ struct ButtonExample {
 }
 
 impl ButtonExample {
-    fn new(window: &mut Window, view_cx: &mut Context<Self>) -> Self {
+    fn new(
+        window: &mut Window,
+        view_cx: &mut Context<Self>,
+    ) -> Self {
         let subscription = view_cx.on_window_closed(|app_cx: &mut App| {
             println!("Window closed callback!");
             quit(&Quit, app_cx);
@@ -20,6 +24,8 @@ impl ButtonExample {
 
         let text_input = view_cx
             .new(|input_cx| InputState::new(window, input_cx).placeholder("Enter text here..."));
+
+        view_cx.focus(&text_input);
 
         Self {
             text_input,
@@ -41,7 +47,11 @@ impl ButtonExample {
 }
 
 impl Render for ButtonExample {
-    fn render(&mut self, window: &mut gpui::Window, view_cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(
+        &mut self,
+        _window: &mut gpui::Window,
+        view_cx: &mut Context<Self>,
+    ) -> impl IntoElement {
         div()
             .v_flex()
             .gap_4()
@@ -54,11 +64,7 @@ impl Render for ButtonExample {
                     .gap_2()
                     .items_center()
                     .child("Enter text:")
-                    .child(
-                        Input::new(&self.text_input)
-                            .w_64()
-                            .focus_on_show(window, view_cx),
-                    )
+                    .child(Input::new(&self.text_input).w_64())
                     .child(
                         Button::new("clear")
                             .primary()
