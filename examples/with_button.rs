@@ -1,3 +1,31 @@
+//! Example: Combining a text input with a button
+//!
+//! This example demonstrates how to build a simple form-like interface using gpui-component,
+//! featuring a text input field and a button that clears it.
+//!
+//! ## Key Concepts Demonstrated
+//!
+//! - **Input state management**: Using [`InputState`] to manage text field content and focus
+//! - **Button click handlers**: Connecting button clicks to view methods with [`Button::on_click`]
+//! - **Initial focus**: Programmatically focusing an element when the window opens
+//! - **Tab navigation**: Cycling focus between the input and button using the Tab key
+//! - **Keyboard activation**: Pressing Space or Enter to activate the focused button
+//! - **Flexbox layout**: Arranging elements horizontally and vertically using `h_flex()` and `v_flex()`
+//!
+//! ## Running the Example
+//!
+//! ```sh
+//! cargo run --example with_button
+//! ```
+//!
+//! ## Usage
+//!
+//! 1. The text input has focus when the window opens
+//! 2. Type some text into the input field
+//! 3. Press Tab to move focus to the "Clear" button
+//! 4. Press Space or Enter to activate the button and clear the text
+//! 5. Press Tab again to return focus to the input field
+
 use gpui::*;
 use gpui_component::{
     Root,
@@ -19,6 +47,10 @@ struct ButtonExample {
     /// The state entity for the text input field.
     /// Wrapped in an [`Entity`] so it can be shared and updated across the view.
     text_input: Entity<InputState>,
+
+    /// Focus handle for keyboard navigation to the button.
+    /// This allows the button to receive Tab focus and respond to keyboard events.
+    button_focus: FocusHandle,
 
     /// Subscription to handle window close events.
     /// Stored to keep the subscription alive for the lifetime of the view.
@@ -49,6 +81,10 @@ impl ButtonExample {
         let text_input = view_cx
             .new(|input_cx| InputState::new(window, input_cx).placeholder("Enter text here..."));
 
+        // Create a focus handle for the button so it can participate in tab navigation
+        // and receive keyboard events.
+        let button_focus = view_cx.focus_handle();
+
         // Focus the text input when the window opens.
         // We need to call update() to get mutable access to the InputState,
         // then call its focus() method with both the window and context.
@@ -58,6 +94,7 @@ impl ButtonExample {
 
         Self {
             text_input,
+            button_focus,
             _window_close_subscription: Some(subscription),
         }
     }
@@ -78,6 +115,23 @@ impl ButtonExample {
         self.text_input.update(view_cx, |input, input_cx| {
             input.set_value("", window, input_cx);
         });
+    }
+
+    /// Handles keyboard events when the button has focus.
+    ///
+    /// Activates the button (clears input) when Space or Enter is pressed.
+    fn handle_button_key(
+        &mut self,
+        event: &KeyDownEvent,
+        window: &mut Window,
+        view_cx: &mut Context<Self>,
+    ) {
+        match &event.keystroke.key {
+            key if key == "space" || key == "enter" => {
+                self.clear_input(&ClickEvent::default(), window, view_cx);
+            }
+            _ => {}
+        }
     }
 }
 
@@ -119,14 +173,29 @@ impl Render for ButtonExample {
                     // Input component wraps the InputState entity
                     // w_64 sets a fixed width (64 units = 16rem = 256px by default)
                     .child(Input::new(&self.text_input).w_64())
+                    // Wrap button in a focusable container that handles keyboard events
                     .child(
-                        Button::new("clear")
-                            // Primary style gives the button a prominent appearance
-                            .primary()
-                            .label("Clear")
-                            // Connect the button click to our handler method
-                            // view_cx.listener() creates a callback that includes the view context
-                            .on_click(view_cx.listener(Self::clear_input)),
+                        div()
+                            // Make this div focusable and track focus with our handle
+                            .track_focus(&self.button_focus)
+                            // Show a border when focused (2px blue outline)
+                            .when(self.button_focus.is_focused(view_cx), |this| {
+                                this.rounded_md()
+                                    .outline_2()
+                                    .outline()
+                                    .outline_color(gpui::blue())
+                            })
+                            // Handle keyboard events when focused
+                            .on_key_down(view_cx.listener(Self::handle_button_key))
+                            .child(
+                                Button::new("clear")
+                                    // Primary style gives the button a prominent appearance
+                                    .primary()
+                                    .label("Clear")
+                                    // Connect the button click to our handler method
+                                    // view_cx.listener() creates a callback that includes the view context
+                                    .on_click(view_cx.listener(Self::clear_input)),
+                            ),
                     ),
             )
     }
