@@ -37,9 +37,9 @@ use gpui_demo::{Quit, preferences::WindowPreferences, quit, setup_app};
 
 /// Hospital-sign blue color for focus borders.
 static FOCUS_BLUE: Rgba = Rgba {
-    r: 0x00.0 / 255.0,
-    g: 0x77.0 / 255.0,
-    b: 0xb6.0 / 255.0,
+    r: 0x00 as f32 / 255.0,
+    g: 0x77 as f32 / 255.0,
+    b: 0xb6 as f32 / 255.0,
     a: 1.0,
 };
 
