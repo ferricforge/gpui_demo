@@ -116,23 +116,6 @@ impl ButtonExample {
             input.set_value("", window, input_cx);
         });
     }
-
-    /// Handles keyboard events when the button has focus.
-    ///
-    /// Activates the button (clears input) when Space or Enter is pressed.
-    fn handle_button_key(
-        &mut self,
-        event: &KeyDownEvent,
-        window: &mut Window,
-        view_cx: &mut Context<Self>,
-    ) {
-        match &event.keystroke.key {
-            key if key == "space" || key == "enter" => {
-                self.clear_input(&ClickEvent::default(), window, view_cx);
-            }
-            _ => {}
-        }
-    }
 }
 
 impl Render for ButtonExample {
@@ -173,29 +156,16 @@ impl Render for ButtonExample {
                     // Input component wraps the InputState entity
                     // w_64 sets a fixed width (64 units = 16rem = 256px by default)
                     .child(Input::new(&self.text_input).w_64())
-                    // Wrap button in a focusable container that handles keyboard events
                     .child(
-                        div()
-                            // Make this div focusable and track focus with our handle
-                            .track_focus(&self.button_focus)
-                            // Show a border when focused (2px blue outline)
-                            .when(self.button_focus.is_focused(view_cx), |this| {
-                                this.rounded_md()
-                                    .outline_2()
-                                    .outline()
-                                    .outline_color(gpui::blue())
-                            })
-                            // Handle keyboard events when focused
-                            .on_key_down(view_cx.listener(Self::handle_button_key))
-                            .child(
-                                Button::new("clear")
-                                    // Primary style gives the button a prominent appearance
-                                    .primary()
-                                    .label("Clear")
-                                    // Connect the button click to our handler method
-                                    // view_cx.listener() creates a callback that includes the view context
-                                    .on_click(view_cx.listener(Self::clear_input)),
-                            ),
+                        Button::new("clear")
+                            // Primary style gives the button a prominent appearance
+                            .primary()
+                            .label("Clear")
+                            // Provide a focus handle for keyboard navigation and focus styling
+                            .focus(Some(self.button_focus.clone()))
+                            // Connect the button click to our handler method
+                            // view_cx.listener() creates a callback that includes the view context
+                            .on_click(view_cx.listener(Self::clear_input)),
                     ),
             )
     }
