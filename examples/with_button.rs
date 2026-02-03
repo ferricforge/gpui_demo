@@ -36,7 +36,12 @@ use gpui_component::{
 use gpui_demo::{Quit, preferences::WindowPreferences, quit, setup_app};
 
 /// Hospital-sign blue color for focus borders.
-const FOCUS_BLUE: Rgba = rgba(0x0077b6ff);
+static FOCUS_BLUE: Rgba = Rgba {
+    r: 0x00.0 / 255.0,
+    g: 0x77.0 / 255.0,
+    b: 0xb6.0 / 255.0,
+    a: 1.0,
+};
 
 /// An example demonstrating how to combine a text input with a button in gpui-component.
 ///
@@ -166,8 +171,8 @@ impl Render for ButtonExample {
                             .label("Clear")
                             // Track focus with our handle for tab navigation
                             .track_focus(&self.button_focus)
-                            // Style the focus ring with hospital-sign blue
-                            .focus(|style| style.outline_color(FOCUS_BLUE))
+                            // Style the focus border with hospital-sign blue
+                            .focus(|style| style.border_color(FOCUS_BLUE))
                             // Connect the button click to our handler method
                             // view_cx.listener() creates a callback that includes the view context
                             .on_click(view_cx.listener(Self::clear_input)),
