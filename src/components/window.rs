@@ -6,12 +6,12 @@ use gpui_component::StyledExt;
 use crate::Quit;
 use crate::quit;
 
-pub struct Window {
+pub struct AppWindow {
     _window_close_subscription: Option<Subscription>,
     content: Option<Box<dyn Fn() -> AnyElement>>,
 }
 
-impl Window {
+impl AppWindow {
     pub fn new(cx: &mut Context<Self>) -> Self {
         let subscription = cx.on_window_closed(|cx: &mut App| {
             println!("Window closed callback!");
@@ -37,7 +37,7 @@ impl Window {
     }
 }
 
-impl Render for Window {
+impl Render for AppWindow {
     fn render(
         &mut self,
         _: &mut gpui::Window,
