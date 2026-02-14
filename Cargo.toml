@@ -3,6 +3,14 @@ name = "gpui_demo"
 version = "0.1.0"
 edition = "2024"
 
+[lib]
+name = "gpui_demo"
+path = "src/lib.rs"
+
+[[bin]]
+name = "gpui_demo"
+path = "src/main.rs"
+
 [dependencies]
 anyhow = "1"
 gpui = "0.2"
