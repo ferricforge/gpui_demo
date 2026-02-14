@@ -1,6 +1,6 @@
 use gpui::*;
 use gpui_component::Root;
-use gpui_demo::{components::Window, preferences::WindowPreferences, setup_app};
+use gpui_demo::{components::Window as MainWindow, preferences::WindowPreferences, setup_app};
 
 fn main() {
     let app = Application::new();
@@ -22,7 +22,7 @@ fn main() {
                     },
                     |window: &mut gpui::Window, window_cx| {
                         let view =
-                            window_cx.new(|view_cx: &mut Context<Window>| Window::new(view_cx));
+                            window_cx.new(|view_cx: &mut Context<MainWindow>| MainWindow::new(view_cx));
                         window_cx.new(|root_cx| Root::new(view, window, root_cx))
                     },
                 )?;

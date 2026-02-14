@@ -5,7 +5,11 @@ use gpui_component::{button::*, *};
 pub struct AnimatedButtonDemo;
 
 impl Render for AnimatedButtonDemo {
-    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+    fn render(
+        &mut self,
+        _: &mut Window,
+        _: &mut Context<Self>,
+    ) -> impl IntoElement {
         v_flex()
             .justify_center()
             .items_center()

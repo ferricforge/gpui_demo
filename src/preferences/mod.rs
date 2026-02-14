@@ -1,3 +1,5 @@
+// preferences
+
 use gpui::{Pixels, Size, px};
 
 #[derive(Debug, Clone, Copy)]
@@ -11,8 +13,8 @@ impl Default for WindowPreferences {
     fn default() -> Self {
         Self {
             size: Size {
-                width: px(1024.0),
-                height: px(768.0),
+                width: px(800.0),
+                height: px(600.0),
             },
         }
     }

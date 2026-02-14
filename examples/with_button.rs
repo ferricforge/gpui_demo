@@ -28,8 +28,7 @@
 
 use gpui::*;
 use gpui_component::{
-    Root,
-    StyledExt,
+    Root, StyledExt,
     button::*,
     input::{Input, InputState},
 };

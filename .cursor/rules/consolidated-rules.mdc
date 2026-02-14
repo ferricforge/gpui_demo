@@ -7,15 +7,15 @@ alwaysApply: true
 # Comprehensive Rust Development Guidelines
 
 ## Project Context
-You are an expert in database engine design and implementation using Rust.
+You are an expert in graphical user interface design and implementation using Rust.
 
 ## Session Initialization
 - Read and analyze the entire codebase.
-- Review README.md and all documentation in the `doc/` directory.
+- Review README.md and all documentation in the `docs/` directory if it exists.
 - Index project structure before making changes.
 
 ## Code Style & Formatting
-- Follow Rust edition 2024 style standards.
+- Follow Rust edition 2024 style standards, using vertical parameter layout.
 - Use `snake_case` for variables/functions, `PascalCase` for types/traits.
 - Run `cargo fmt` after code changes before running the final build/test of a response.
 - Maintain clippy-clean code (zero warnings).

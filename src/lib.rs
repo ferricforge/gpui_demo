@@ -20,8 +20,15 @@ pub fn setup_app(cx: &mut App) {
 
     cx.activate(true);
 
-    // Bind Cmd+Q to the Quit action
+    // Bind platform-appropriate quit shortcut
+    #[cfg(target_os = "macos")]
     cx.bind_keys([KeyBinding::new("cmd-q", Quit, None)]);
+
+    #[cfg(not(target_os = "macos"))]
+    cx.bind_keys([
+        KeyBinding::new("ctrl-q", Quit, None),
+        KeyBinding::new("alt-F4", Quit, None),
+    ]);
 
     // Register the quit action handler
     cx.on_action(quit);
