@@ -45,7 +45,7 @@ pub fn setup_app(app_cx: &mut App) {
     // Set up the application menu with Quit
     app_cx.set_menus(vec![
         Menu {
-            name: "App".into(),
+            name: "TimeKeeper Loader".into(),
             items: vec![MenuItem::action("Quit", Quit)],
         },
     ]);
@@ -99,3 +99,4 @@ pub fn build_main_content(
             .into_any_element()
     }
 }
+
