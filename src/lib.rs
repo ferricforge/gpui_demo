@@ -1,4 +1,5 @@
 pub mod components;
+pub mod logging;
 pub mod models;
 pub mod platform;
 pub mod preferences;
@@ -8,6 +9,7 @@ use gpui::{
     MenuItem, ParentElement, Styled, Window, actions,
 };
 use gpui_component::{TitleBar, h_flex, v_flex};
+use tracing::{info, warn};
 
 use crate::components::{FileSelectionForm, make_button};
 #[cfg(target_os = "macos")]
@@ -20,7 +22,7 @@ pub fn quit(
     _: &Quit,
     cx: &mut App,
 ) {
-    println!("Executing the Quit handler");
+    info!("Executing quit handler");
     cx.quit();
 }
 
@@ -86,13 +88,13 @@ pub fn build_main_content(
                             let form_model = form_handle.read(cx).to_model(cx);
                             match form_model.validate_for_submit() {
                                 Ok(()) => {
-                                    println!("Form data is:\n{form_model}");
+                                    info!(%form_model, "Form validated");
                                     // Next step: pass validated model to the processing crate.
                                 }
                                 Err(errors) => {
-                                    println!("Cannot submit form due to validation errors:");
+                                    warn!("Cannot submit form due to validation errors");
                                     for error in errors {
-                                        println!("- {error}");
+                                        warn!(%error, "validation error");
                                     }
                                 }
                             }
@@ -105,8 +107,12 @@ pub fn build_main_content(
                             "Load Sheets",
                             move |_, window, cx: &mut App| {
                                 let form_model = form_handle.read(cx).to_model(cx);
-                                println!("Form data is:\n{form_model}");
                                 let sheets = form_handle.read(cx).load_sheet_options(cx);
+                                info!(
+                                    source_file = %form_model.source_file.display(),
+                                    sheet_count = sheets.len(),
+                                    "Loaded sheet options"
+                                );
                                 form_handle.update(cx, |form, form_cx| {
                                     form.set_sheet_options(sheets, window, form_cx);
                                 });

@@ -12,9 +12,11 @@ use gpui_component::{
     select::{Select, SelectState},
     v_flex,
 };
+use tracing::debug;
 
 use crate::{
     components::{dialogs::get_folder_path, get_file_path, make_button, owned_filters},
+    logging::log_task_error,
     models::{DbBackend, FileFormModel, LogLevel},
 };
 
@@ -383,19 +385,28 @@ fn file_select_handler(
         let select_dir = select_dir;
         let mut async_window = window.to_async(cx);
         cx.spawn(async move |_async_cx| {
-            let path = if select_dir {
-                get_folder_path(directory).await
-            } else {
-                get_file_path(directory, filters).await
-            };
-            if let Some(path) = path {
-                let path_str = path.display().to_string();
-                async_window.update(|window, cx| {
-                    input.update(cx, |state, cx| {
-                        state.set_value(path_str, window, cx);
-                    });
-                })?;
+            let result: anyhow::Result<()> = async {
+                let path = if select_dir {
+                    get_folder_path(directory).await
+                } else {
+                    get_file_path(directory, filters).await
+                };
+                if let Some(path) = path {
+                    let path_str = path.display().to_string();
+                    async_window.update(|window, cx| {
+                        input.update(cx, |state, cx| {
+                            state.set_value(path_str, window, cx);
+                        });
+                    })?;
+                } else {
+                    debug!("No file/folder selected");
+                }
+
+                Ok(())
             }
+            .await;
+
+            log_task_error("file_select_handler", result);
             Ok::<_, anyhow::Error>(())
         })
         .detach();

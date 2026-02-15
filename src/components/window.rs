@@ -2,6 +2,7 @@
 
 use gpui::*;
 use gpui_component::StyledExt;
+use tracing::info;
 
 use crate::Quit;
 use crate::quit;
@@ -14,11 +15,11 @@ pub struct AppWindow {
 impl AppWindow {
     pub fn new(cx: &mut Context<Self>) -> Self {
         let subscription = cx.on_window_closed(|cx: &mut App| {
-            println!("Window closed callback!");
+            info!("Window closed callback");
             quit(&Quit, cx);
         });
 
-        println!("Window has been constructed");
+        info!("Window constructed");
         Self {
             _window_close_subscription: Some(subscription),
             content: None,
