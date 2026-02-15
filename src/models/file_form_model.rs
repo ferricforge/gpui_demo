@@ -8,6 +8,8 @@ pub struct FileFormModel {
     pub source_file: PathBuf,
     pub database_file: PathBuf,
     pub log_directory: PathBuf,
+    pub db_backend: String,
+    pub log_level: String,
     pub log_stdout: bool,
     pub has_headers: bool,
 }
@@ -58,6 +60,8 @@ impl fmt::Display for FileFormModel {
         writeln!(f, "Source file:   {}", self.source_file.to_string_lossy())?;
         writeln!(f, "Database:      {}", self.database_file.to_string_lossy())?;
         writeln!(f, "Log folder:    {}", self.log_directory.to_string_lossy())?;
+        writeln!(f, "DB Backend:    {}", self.db_backend)?;
+        writeln!(f, "Log Level:     {}", self.log_level)?;
         writeln!(f, "Log to stdout: {}", self.log_stdout)?;
         write!(f, "Has headers:   {}", self.has_headers)
     }
@@ -83,6 +87,8 @@ mod tests {
             source_file: PathBuf::from("data.xlsx"),
             database_file: PathBuf::from("app.db"),
             log_directory: PathBuf::from("output.log"),
+            db_backend: "MySQL".to_string(),
+            log_level: "INFO".to_string(),
             log_stdout: true,
             has_headers: true,
         };
@@ -90,6 +96,8 @@ mod tests {
         assert!(output.contains("data.xlsx"));
         assert!(output.contains("app.db"));
         assert!(output.contains("output.log"));
+        assert!(output.contains("MySQL"));
+        assert!(output.contains("INFO"));
         assert!(output.contains("true"));
     }
 

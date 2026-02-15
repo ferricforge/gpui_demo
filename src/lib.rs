@@ -1,5 +1,6 @@
 pub mod components;
 pub mod models;
+pub mod platform;
 pub mod preferences;
 
 #[cfg(target_os = "macos")]
@@ -11,6 +12,8 @@ use gpui::{
 use gpui_component::{TitleBar, h_flex, v_flex};
 
 use crate::components::{FileSelectionForm, make_button};
+#[cfg(target_os = "macos")]
+use crate::platform::apply_macos_system_theme;
 
 actions!(gpui_demo, [Quit]);
 
@@ -26,6 +29,9 @@ pub fn quit(
 pub fn setup_app(app_cx: &mut App) {
     // This must be called before using any GPUI Component features.
     gpui_component::init(app_cx);
+
+    #[cfg(target_os = "macos")]
+    apply_macos_system_theme(app_cx);
 
     app_cx.activate(true);
 

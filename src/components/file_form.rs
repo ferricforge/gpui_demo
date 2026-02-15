@@ -2,12 +2,14 @@ use std::path::PathBuf;
 
 use gpui::{
     App, AppContext, ClickEvent, Context, Div, Entity, IntoElement, ParentElement, Render,
-    SharedString, Styled, TextAlign, Window, div, px,
+    RenderOnce, SharedString, Styled, TextAlign, Window, div, px,
 };
 use gpui_component::{
+    IndexPath,
     checkbox::Checkbox,
     h_flex,
     input::{Input, InputState},
+    select::{Select, SelectState},
     v_flex,
 };
 
@@ -20,6 +22,8 @@ pub struct FileSelectionForm {
     source_file: Entity<InputState>,
     database_file: Entity<InputState>,
     log_directory: Entity<InputState>,
+    db_backend_select: Entity<SelectState<Vec<SharedString>>>,
+    log_level_select: Entity<SelectState<Vec<SharedString>>>,
     log_stdout: bool,
     has_headers: bool,
 }
@@ -33,10 +37,45 @@ impl FileSelectionForm {
         let database_file = make_input_state("Database file path...", window, cx);
         let log_file = make_input_state("Log folder path...", window, cx);
 
+        let db_options = vec![
+            SharedString::from("SQLite"),
+            SharedString::from("MySQL"),
+            SharedString::from("DB2"),
+            SharedString::from("Postgresql"),
+            SharedString::from("MariaDB"),
+            SharedString::from("MSSQL"),
+            SharedString::from("Redis"),
+            SharedString::from("AWS"),
+            SharedString::from("Azure"),
+            SharedString::from("Google Cloud"),
+            SharedString::from("Apache"),
+        ];
+        let initial_index = db_options
+            .iter()
+            .position(|s| s.as_ref() == "SQLite")
+            .map(|i| IndexPath::default().row(i));
+        let db_backend_select =
+            cx.new(|cx| SelectState::new(db_options, initial_index, window, cx));
+
+        let log_levels = vec![
+            SharedString::from("ERROR"),
+            SharedString::from("WARN"),
+            SharedString::from("INFO"),
+            SharedString::from("DEBUG"),
+            SharedString::from("TRACE"),
+        ];
+        let initial_index = log_levels
+            .iter()
+            .position(|s| s.as_ref() == "INFO")
+            .map(|i| IndexPath::default().row(i));
+        let log_level_select = cx.new(|cx| SelectState::new(log_levels, initial_index, window, cx));
+
         Self {
             source_file,
             database_file,
             log_directory: log_file,
+            db_backend_select,
+            log_level_select,
             log_stdout: false,
             has_headers: true,
         }
@@ -47,10 +86,18 @@ impl FileSelectionForm {
         &self,
         cx: &App,
     ) -> FileFormModel {
+        let db: Option<&SharedString> = self.db_backend_select.read(cx).selected_value();
+        let db_backend: String = db.map(ToString::to_string).unwrap_or_default();
+
+        let level: Option<&SharedString> = self.log_level_select.read(cx).selected_value();
+        let log_level: String = level.map(ToString::to_string).unwrap_or_default();
+
         FileFormModel {
             source_file: PathBuf::from(self.source_file.read(cx).value().as_str().trim()),
             database_file: PathBuf::from(self.database_file.read(cx).value().as_str().trim()),
             log_directory: PathBuf::from(self.log_directory.read(cx).value().as_str().trim()),
+            db_backend,
+            log_level,
             log_stdout: self.log_stdout,
             has_headers: self.has_headers,
         }
@@ -85,7 +132,7 @@ impl FileSelectionForm {
 impl Render for FileSelectionForm {
     fn render(
         &mut self,
-        _: &mut Window,
+        window: &mut Window,
         cx: &mut Context<Self>,
     ) -> impl IntoElement {
         v_flex()
@@ -135,6 +182,44 @@ impl Render for FileSelectionForm {
                 "Select Log Folder",
                 file_select_handler(&self.log_directory, "~/Desktop", &[], true),
             ))
+            .child(
+                h_flex()
+                    .items_center()
+                    .gap_5()
+                    .p(px(2.))
+                    .rounded_md()
+                    .border_1()
+                    .child(
+                        div()
+                            .min_w(px(100.)) // keeps rows aligned
+                            .text_align(TextAlign::Right)
+                            .child("Log Level:"),
+                    )
+                    .child(
+                        Select::new(&self.log_level_select)
+                            .w_full()
+                            .render(window, cx),
+                    ),
+            )
+            .child(
+                h_flex()
+                    .items_center()
+                    .gap_5()
+                    .p(px(2.))
+                    .rounded_md()
+                    .border_1()
+                    .child(
+                        div()
+                            .min_w(px(100.)) // keeps rows aligned
+                            .text_align(TextAlign::Right)
+                            .child("DB Backend:"),
+                    )
+                    .child(
+                        Select::new(&self.db_backend_select)
+                            .w_full()
+                            .render(window, cx),
+                    ),
+            )
             .child(
                 v_flex()
                     .gap_4()
