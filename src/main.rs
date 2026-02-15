@@ -4,11 +4,12 @@ use gpui::{
 };
 
 use gpui_component::Root;
+use gpui_component_assets::Assets;
 use gpui_demo::build_main_content;
 use gpui_demo::{components::AppWindow as MainWindow, preferences::WindowPreferences, setup_app};
 
 fn main() {
-    let app = Application::new();
+    let app = Application::new().with_assets(Assets);
 
     app.run(move |app_cx: &mut App| {
         setup_app(app_cx);
