@@ -1,16 +1,16 @@
 pub mod components;
+pub mod models;
 pub mod preferences;
 
 #[cfg(target_os = "macos")]
 use gpui::KeyBinding;
 use gpui::{
-    AnyElement, App, AppContext, Context, Entity, InteractiveElement, IntoElement, Menu, MenuItem,
-    ParentElement, Render, Styled, TextAlign, Window, actions, div, px,
+    AnyElement, App, AppContext, Context, InteractiveElement, IntoElement, Menu, MenuItem,
+    ParentElement, Styled, Window, actions,
 };
-use gpui_component::input::{Input, InputState};
 use gpui_component::{TitleBar, h_flex, v_flex};
 
-use crate::components::{RegistrationForm, make_button};
+use crate::components::{FileSelectionForm, make_button};
 
 actions!(gpui_demo, [Quit]);
 
@@ -62,9 +62,6 @@ pub fn build_main_content(
     let form = app_cx
         .new(|form_cx: &mut Context<FileSelectionForm>| FileSelectionForm::new(window, form_cx));
 
-    let register = app_cx
-        .new(|form_cx: &mut Context<RegistrationForm>| RegistrationForm::new(window, form_cx));
-
     move || {
         v_flex()
             .size_full()
@@ -84,93 +81,21 @@ pub fn build_main_content(
             .child(
                 h_flex()
                     .id("window-body")
-                    .p_5()
+                    .p_1()
                     .gap_4()
-                    .size_full()
                     .items_center()
                     .justify_center()
                     .child("Hello, World!")
-                    .child(make_button("ok-go", "Let's Go!", |_, _, _| {
-                        println!("I've been CLICKED! 😫")
-                    })),
+                    .child({
+                        let form_handle = form.clone();
+                        make_button("ok-go", "Let's Go!", move |_, _, cx: &mut App| {
+                            println!("I've been CLICKED! 😫");
+                            let form_model = form_handle.read(cx).to_model(cx);
+                            println!("Form data is:\n{form_model}");
+                        })
+                    }),
             )
-            .child(register.clone())
             .child(form.clone())
             .into_any_element()
-    }
-}
-
-pub struct FileSelectionForm {
-    source_file: Entity<InputState>,
-    database_file: Entity<InputState>,
-}
-
-impl FileSelectionForm {
-    pub fn new(
-        window: &mut Window,
-        cx: &mut Context<Self>,
-    ) -> Self {
-        let source_file = cx.new(|closure_cx| {
-            InputState::new(window, closure_cx).placeholder("Source file path...")
-        });
-        let database_file = cx.new(|closure_cx| {
-            InputState::new(window, closure_cx).placeholder("Database file path...")
-        });
-
-        Self {
-            source_file,
-            database_file,
-        }
-    }
-}
-
-impl Render for FileSelectionForm {
-    fn render(
-        &mut self,
-        _: &mut Window,
-        _cx: &mut Context<Self>,
-    ) -> impl IntoElement {
-        v_flex()
-            .gap(px(2.))
-            .child(
-                h_flex()
-                    .items_center()
-                    .gap_5()
-                    .p(px(2.))
-                    .rounded_md()
-                    .border_1()
-                    .child(
-                        div()
-                            .min_w(px(100.)) // keeps rows aligned
-                            .text_align(TextAlign::Right)
-                            .child("Source File:"),
-                    )
-                    .child(
-                        Input::new(&self.source_file).flex_grow(), // input expands
-                    )
-                    .child(make_button("source-select", "Select File", |_, _, _| {
-                        println!("I've been CLICKED! 😫")
-                    })),
-            )
-            .child(
-                h_flex()
-                    .items_center()
-                    .gap_5()
-                    .p(px(2.))
-                    .rounded_md()
-                    .border_1()
-                    .child(
-                        div()
-                            .min_w(px(100.))
-                            .text_align(TextAlign::Right)
-                            .child("Database:"),
-                    )
-                    .child(
-                        Input::new(&self.database_file).flex_grow(), // Input expands
-                    )
-                    .child(make_button("db-select", "Select Database", |_, _, _| {
-                        println!("I've been CLICKED! 😫")
-                    })),
-            )
     }
 }

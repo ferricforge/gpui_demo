@@ -1,10 +1,13 @@
 // components
 
-pub mod registration;
+pub mod dialogs;
+pub mod file_form;
 pub mod window;
 
 use gpui_component::Sizable;
-pub use registration::RegistrationForm;
+
+pub use dialogs::{get_file_path, owned_filters};
+pub use file_form::FileSelectionForm;
 pub use window::AppWindow;
 
 use gpui::{App, SharedString, Window};
