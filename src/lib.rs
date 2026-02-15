@@ -83,9 +83,19 @@ pub fn build_main_content(
                     .child({
                         let form_handle = form.clone();
                         make_button("ok-go", "Convert Files", move |_, _, cx: &mut App| {
-                            println!("I've been CLICKED! 😫");
                             let form_model = form_handle.read(cx).to_model(cx);
-                            println!("Form data is:\n{form_model}");
+                            match form_model.validate_for_submit() {
+                                Ok(()) => {
+                                    println!("Form data is:\n{form_model}");
+                                    // Next step: pass validated model to the processing crate.
+                                }
+                                Err(errors) => {
+                                    println!("Cannot submit form due to validation errors:");
+                                    for error in errors {
+                                        println!("- {error}");
+                                    }
+                                }
+                            }
                         })
                     })
                     .child({
@@ -94,7 +104,6 @@ pub fn build_main_content(
                             "load-sheets",
                             "Load Sheets",
                             move |_, window, cx: &mut App| {
-                                println!("I've been CLICKED! 😫");
                                 let form_model = form_handle.read(cx).to_model(cx);
                                 println!("Form data is:\n{form_model}");
                                 let sheets = form_handle.read(cx).load_sheet_options(cx);

@@ -15,7 +15,7 @@ use gpui_component::{
 
 use crate::{
     components::{dialogs::get_folder_path, get_file_path, make_button, owned_filters},
-    models::FileFormModel,
+    models::{DbBackend, FileFormModel, LogLevel},
 };
 
 pub struct FileSelectionForm {
@@ -91,13 +91,20 @@ impl FileSelectionForm {
         cx: &App,
     ) -> FileFormModel {
         let db: Option<&SharedString> = self.db_backend_select.read(cx).selected_value();
-        let db_backend: String = db.map(ToString::to_string).unwrap_or_default();
+        let db_backend = db
+            .and_then(|value| DbBackend::from_label(value.as_ref()))
+            .unwrap_or_default();
 
         let level: Option<&SharedString> = self.log_level_select.read(cx).selected_value();
-        let log_level: String = level.map(ToString::to_string).unwrap_or_default();
+        let log_level = level
+            .and_then(|value| LogLevel::from_label(value.as_ref()))
+            .unwrap_or_default();
 
-        let sheet: Option<&SharedString> = self.sheets_select.read(cx).selected_value();
-        let selected_sheet: String = sheet.map(ToString::to_string).unwrap_or_default();
+        let selected_sheet: Option<String> = self
+            .sheets_select
+            .read(cx)
+            .selected_value()
+            .map(ToString::to_string);
 
         FileFormModel {
             source_file: PathBuf::from(self.source_file.read(cx).value().as_str().trim()),
@@ -161,7 +168,6 @@ impl FileSelectionForm {
             .map(|ext| ext.to_ascii_lowercase())
             .as_deref()
         {
-            Some("csv") => vec![SharedString::from("CSV Data")],
             Some("xlsx" | "xlsm" | "xlsb" | "xls") => vec![
                 SharedString::from("Sheet1"),
                 SharedString::from("Sheet2"),
