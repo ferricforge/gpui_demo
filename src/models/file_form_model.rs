@@ -110,13 +110,21 @@ mod tests {
 
     #[test]
     fn test_is_sqlite_positive() {
-        let sqlite_extensions = ["main.db", "main.db3", "main.sqlite", "main.DB"];
+        let sqlite_extensions = [
+            "main.db",
+            "main.db3",
+            "main.sqlite",
+            "main.DB",
+        ];
         for file_name in sqlite_extensions {
             let model = FileFormModel {
                 database_file: PathBuf::from(file_name),
                 ..FileFormModel::default()
             };
-            assert!(model.is_sqlite(), "expected {file_name} to be recognized as sqlite");
+            assert!(
+                model.is_sqlite(),
+                "expected {file_name} to be recognized as sqlite"
+            );
         }
     }
 
@@ -131,13 +139,19 @@ mod tests {
 
     #[test]
     fn test_is_csv_positive() {
-        let csv_sources = ["input.csv", "INPUT.CSV"];
+        let csv_sources = [
+            "input.csv",
+            "INPUT.CSV",
+        ];
         for file_name in csv_sources {
             let model = FileFormModel {
                 source_file: PathBuf::from(file_name),
                 ..FileFormModel::default()
             };
-            assert!(model.is_csv(), "expected {file_name} to be recognized as csv");
+            assert!(
+                model.is_csv(),
+                "expected {file_name} to be recognized as csv"
+            );
         }
     }
 

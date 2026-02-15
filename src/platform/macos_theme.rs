@@ -32,7 +32,12 @@ fn rgba_to_hsla(
     let l = (max + min) / 2.0;
 
     if (max - min).abs() < f32::EPSILON {
-        return Hsla { h: 0.0, s: 0.0, l, a };
+        return Hsla {
+            h: 0.0,
+            s: 0.0,
+            l,
+            a,
+        };
     }
 
     let d = max - min;
@@ -218,12 +223,24 @@ pub fn apply_macos_system_theme(cx: &mut App) {
     apply(&mut colors.cyan, &sys_teal);
     apply(&mut colors.magenta, &sys_pink);
 
-    if let Some(h) = nscolor_to_hsla(&sys_red) { colors.red_light = lighter(h); }
-    if let Some(h) = nscolor_to_hsla(&sys_green) { colors.green_light = lighter(h); }
-    if let Some(h) = nscolor_to_hsla(&sys_blue) { colors.blue_light = lighter(h); }
-    if let Some(h) = nscolor_to_hsla(&sys_yellow) { colors.yellow_light = lighter(h); }
-    if let Some(h) = nscolor_to_hsla(&sys_teal) { colors.cyan_light = lighter(h); }
-    if let Some(h) = nscolor_to_hsla(&sys_pink) { colors.magenta_light = lighter(h); }
+    if let Some(h) = nscolor_to_hsla(&sys_red) {
+        colors.red_light = lighter(h);
+    }
+    if let Some(h) = nscolor_to_hsla(&sys_green) {
+        colors.green_light = lighter(h);
+    }
+    if let Some(h) = nscolor_to_hsla(&sys_blue) {
+        colors.blue_light = lighter(h);
+    }
+    if let Some(h) = nscolor_to_hsla(&sys_yellow) {
+        colors.yellow_light = lighter(h);
+    }
+    if let Some(h) = nscolor_to_hsla(&sys_teal) {
+        colors.cyan_light = lighter(h);
+    }
+    if let Some(h) = nscolor_to_hsla(&sys_pink) {
+        colors.magenta_light = lighter(h);
+    }
 
     // ── Candlestick chart ─────────────────────────────────────────
     apply(&mut colors.bullish, &sys_green);
@@ -246,9 +263,10 @@ pub fn apply_macos_system_theme(cx: &mut App) {
     apply(&mut colors.window_border, &separator);
 
     // ── Overlay ───────────────────────────────────────────────────
-    apply(&mut colors.overlay, &NSColor::colorWithSRGBRed_green_blue_alpha(
-        0.0, 0.0, 0.0, 0.4,
-    ));
+    apply(
+        &mut colors.overlay,
+        &NSColor::colorWithSRGBRed_green_blue_alpha(0.0, 0.0, 0.0, 0.4),
+    );
 
     // ── List ──────────────────────────────────────────────────────
     apply(&mut colors.list, &control_bg);
@@ -309,7 +327,10 @@ pub fn apply_macos_system_theme(cx: &mut App) {
 
     // ── DescriptionList ───────────────────────────────────────────
     apply(&mut colors.description_list_label, &unemphasized_bg);
-    apply(&mut colors.description_list_label_foreground, &secondary_label);
+    apply(
+        &mut colors.description_list_label_foreground,
+        &secondary_label,
+    );
 
     // ── Drag / drop ───────────────────────────────────────────────
     apply(&mut colors.drag_border, &accent);

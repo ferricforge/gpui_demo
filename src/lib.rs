@@ -3,11 +3,9 @@ pub mod models;
 pub mod platform;
 pub mod preferences;
 
-#[cfg(target_os = "macos")]
-use gpui::KeyBinding;
 use gpui::{
-    AnyElement, App, AppContext, Context, InteractiveElement, IntoElement, Menu, MenuItem,
-    ParentElement, Styled, Window, actions,
+    AnyElement, App, AppContext, Context, InteractiveElement, IntoElement, KeyBinding, Menu,
+    MenuItem, ParentElement, Styled, Window, actions,
 };
 use gpui_component::{TitleBar, h_flex, v_flex};
 
@@ -73,9 +71,7 @@ pub fn build_main_content(
             .size_full()
             .p_5()
             .gap_4()
-            .child(
-                TitleBar::new().child(h_flex().w_full().child("TimeKeeper Loader")),
-            )
+            .child(TitleBar::new().child(h_flex().w_full().child("TimeKeeper Loader")))
             .child(form.clone())
             .child(
                 h_flex()
