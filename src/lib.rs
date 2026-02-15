@@ -90,11 +90,19 @@ pub fn build_main_content(
                     })
                     .child({
                         let form_handle = form.clone();
-                        make_button("load-sheets", "Load Sheets", move |_, _, cx: &mut App| {
-                            println!("I've been CLICKED! 😫");
-                            let form_model = form_handle.read(cx).to_model(cx);
-                            println!("Form data is:\n{form_model}");
-                        })
+                        make_button(
+                            "load-sheets",
+                            "Load Sheets",
+                            move |_, window, cx: &mut App| {
+                                println!("I've been CLICKED! 😫");
+                                let form_model = form_handle.read(cx).to_model(cx);
+                                println!("Form data is:\n{form_model}");
+                                let sheets = form_handle.read(cx).load_sheet_options(cx);
+                                form_handle.update(cx, |form, form_cx| {
+                                    form.set_sheet_options(sheets, window, form_cx);
+                                });
+                            },
+                        )
                     }),
             )
             .into_any_element()

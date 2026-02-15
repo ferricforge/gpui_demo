@@ -24,6 +24,7 @@ pub struct FileSelectionForm {
     log_directory: Entity<InputState>,
     db_backend_select: Entity<SelectState<Vec<SharedString>>>,
     log_level_select: Entity<SelectState<Vec<SharedString>>>,
+    sheets_select: Entity<SelectState<Vec<SharedString>>>,
     log_stdout: bool,
     has_headers: bool,
 }
@@ -69,6 +70,8 @@ impl FileSelectionForm {
             .position(|s| s.as_ref() == "INFO")
             .map(|i| IndexPath::default().row(i));
         let log_level_select = cx.new(|cx| SelectState::new(log_levels, initial_index, window, cx));
+        let sheets_select =
+            cx.new(|cx| SelectState::new(Vec::<SharedString>::new(), None, window, cx));
 
         Self {
             source_file,
@@ -76,6 +79,7 @@ impl FileSelectionForm {
             log_directory: log_file,
             db_backend_select,
             log_level_select,
+            sheets_select,
             log_stdout: false,
             has_headers: true,
         }
@@ -92,12 +96,16 @@ impl FileSelectionForm {
         let level: Option<&SharedString> = self.log_level_select.read(cx).selected_value();
         let log_level: String = level.map(ToString::to_string).unwrap_or_default();
 
+        let sheet: Option<&SharedString> = self.sheets_select.read(cx).selected_value();
+        let selected_sheet: String = sheet.map(ToString::to_string).unwrap_or_default();
+
         FileFormModel {
             source_file: PathBuf::from(self.source_file.read(cx).value().as_str().trim()),
             database_file: PathBuf::from(self.database_file.read(cx).value().as_str().trim()),
             log_directory: PathBuf::from(self.log_directory.read(cx).value().as_str().trim()),
             db_backend,
             log_level,
+            selected_sheet,
             log_stdout: self.log_stdout,
             has_headers: self.has_headers,
         }
@@ -126,6 +134,60 @@ impl FileSelectionForm {
     /// Returns whether the source file has headers.
     pub fn has_headers(&self) -> bool {
         self.has_headers
+    }
+
+    /// Returns sheet options derived from the current source input value.
+    ///
+    /// This is called by the "Load Sheets" button and can be replaced later
+    /// with real workbook parsing.
+    pub fn load_sheet_options(
+        &self,
+        cx: &App,
+    ) -> Vec<SharedString> {
+        let source = self
+            .source_file
+            .read(cx)
+            .value()
+            .as_str()
+            .trim()
+            .to_string();
+        if source.is_empty() {
+            return Vec::new();
+        }
+
+        match PathBuf::from(source)
+            .extension()
+            .and_then(|ext| ext.to_str())
+            .map(|ext| ext.to_ascii_lowercase())
+            .as_deref()
+        {
+            Some("csv") => vec![SharedString::from("CSV Data")],
+            Some("xlsx" | "xlsm" | "xlsb" | "xls") => vec![
+                SharedString::from("Sheet1"),
+                SharedString::from("Sheet2"),
+                SharedString::from("Sheet3"),
+            ],
+            _ => Vec::new(),
+        }
+    }
+
+    /// Replaces the sheet dropdown options and selects the first item if present.
+    pub fn set_sheet_options(
+        &mut self,
+        options: Vec<SharedString>,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let selected_index = if options.is_empty() {
+            None
+        } else {
+            Some(IndexPath::default())
+        };
+
+        self.sheets_select.update(cx, |state, cx| {
+            state.set_items(options, window, cx);
+            state.set_selected_index(selected_index, window, cx);
+        });
     }
 }
 
@@ -219,6 +281,21 @@ impl Render for FileSelectionForm {
                             .w_full()
                             .render(window, cx),
                     ),
+            )
+            .child(
+                h_flex()
+                    .items_center()
+                    .gap_5()
+                    .p(px(2.))
+                    .rounded_md()
+                    .border_1()
+                    .child(
+                        div()
+                            .min_w(px(100.)) // keeps rows aligned
+                            .text_align(TextAlign::Right)
+                            .child("Sheets:"),
+                    )
+                    .child(Select::new(&self.sheets_select).w_full().render(window, cx)),
             )
             .child(
                 v_flex()

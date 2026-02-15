@@ -10,6 +10,7 @@ pub struct FileFormModel {
     pub log_directory: PathBuf,
     pub db_backend: String,
     pub log_level: String,
+    pub selected_sheet: String,
     pub log_stdout: bool,
     pub has_headers: bool,
 }
@@ -62,6 +63,7 @@ impl fmt::Display for FileFormModel {
         writeln!(f, "Log folder:    {}", self.log_directory.to_string_lossy())?;
         writeln!(f, "DB Backend:    {}", self.db_backend)?;
         writeln!(f, "Log Level:     {}", self.log_level)?;
+        writeln!(f, "Sheet:         {}", self.selected_sheet)?;
         writeln!(f, "Log to stdout: {}", self.log_stdout)?;
         write!(f, "Has headers:   {}", self.has_headers)
     }
@@ -89,6 +91,7 @@ mod tests {
             log_directory: PathBuf::from("output.log"),
             db_backend: "MySQL".to_string(),
             log_level: "INFO".to_string(),
+            selected_sheet: "Sheet1".to_string(),
             log_stdout: true,
             has_headers: true,
         };
@@ -98,6 +101,7 @@ mod tests {
         assert!(output.contains("output.log"));
         assert!(output.contains("MySQL"));
         assert!(output.contains("INFO"));
+        assert!(output.contains("Sheet1"));
         assert!(output.contains("true"));
     }
 
