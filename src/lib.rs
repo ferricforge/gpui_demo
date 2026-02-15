@@ -66,18 +66,11 @@ pub fn build_main_content(
         v_flex()
             .size_full()
             .p_5()
-            .gap_1()
+            .gap_4()
             .child(
-                TitleBar::new().child(
-                    h_flex()
-                        .w_full()
-                        .pl_0()
-                        .pr_2()
-                        .justify_between()
-                        .child("App with Custom title bar")
-                        .child("Right Item"),
-                ),
+                TitleBar::new().child(h_flex().w_full().child("TimeKeeper Loader")),
             )
+            .child(form.clone())
             .child(
                 h_flex()
                     .id("window-body")
@@ -85,18 +78,23 @@ pub fn build_main_content(
                     .gap_4()
                     .items_center()
                     .justify_center()
-                    .child("Hello, World!")
                     .child({
                         let form_handle = form.clone();
-                        make_button("ok-go", "Let's Go!", move |_, _, cx: &mut App| {
+                        make_button("ok-go", "Convert Files", move |_, _, cx: &mut App| {
+                            println!("I've been CLICKED! 😫");
+                            let form_model = form_handle.read(cx).to_model(cx);
+                            println!("Form data is:\n{form_model}");
+                        })
+                    })
+                    .child({
+                        let form_handle = form.clone();
+                        make_button("load-sheets", "Load Sheets", move |_, _, cx: &mut App| {
                             println!("I've been CLICKED! 😫");
                             let form_model = form_handle.read(cx).to_model(cx);
                             println!("Form data is:\n{form_model}");
                         })
                     }),
             )
-            .child(form.clone())
             .into_any_element()
     }
 }
-

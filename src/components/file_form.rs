@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use gpui::{
     App, AppContext, ClickEvent, Context, Div, Entity, IntoElement, ParentElement, Render,
     SharedString, Styled, TextAlign, Window, div, px,
@@ -46,9 +48,9 @@ impl FileSelectionForm {
         cx: &App,
     ) -> FileFormModel {
         FileFormModel {
-            source_file: self.source_file.read(cx).value().into(),
-            database_file: self.database_file.read(cx).value().into(),
-            log_directory: self.log_directory.read(cx).value().into(),
+            source_file: PathBuf::from(self.source_file.read(cx).value().as_str().trim()),
+            database_file: PathBuf::from(self.database_file.read(cx).value().as_str().trim()),
+            log_directory: PathBuf::from(self.log_directory.read(cx).value().as_str().trim()),
             log_stdout: self.log_stdout,
             has_headers: self.has_headers,
         }
