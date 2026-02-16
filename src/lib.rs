@@ -91,8 +91,13 @@ pub fn build_main_content(
                             let form_model = form_handle.read(cx).to_model(cx);
                             match form_model.validate_for_submit() {
                                 Ok(()) => {
+                                    // Apply the level before doing any work so subsequent
+                                    // log calls in this session use the user's choice.
+                                    // EnvFilter parsing is case-insensitive, so "INFO" and "info" both work.
+                                    if let Err(e) = logging::set_log_level(&form_model.log_level.to_string()) {
+                                        warn!("Could not apply log level: {e}");
+                                    }
                                     info!(%form_model, "Form validated");
-                                    // Next step: pass validated model to the processing crate.
                                 }
                                 Err(errors) => {
                                     warn!("Cannot submit form due to validation errors");
