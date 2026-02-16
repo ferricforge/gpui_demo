@@ -12,6 +12,8 @@ use gpui_demo::{
 };
 
 fn main() {
+    init_default_logging();
+
     #[cfg(target_os = "linux")]
     {
         let is_gnome = std::env::var("XDG_CURRENT_DESKTOP")
@@ -21,6 +23,9 @@ fn main() {
         let has_wayland_display = std::env::var_os("WAYLAND_DISPLAY").is_some();
 
         if is_gnome && has_x11_display && has_wayland_display {
+            tracing::info!(
+                "GNOME Wayland detected; falling back to XWayland for window decorations"
+            );
             // SAFETY: This runs at process startup before any worker threads
             // are started, so mutating process environment is confined to this
             // single-threaded initialization phase.
@@ -29,8 +34,6 @@ fn main() {
             }
         }
     }
-
-    init_default_logging();
 
     let app = Application::new().with_assets(Assets);
 
