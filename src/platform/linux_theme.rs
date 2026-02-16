@@ -159,11 +159,17 @@ fn read_portal_setting(
 }
 
 fn parse_color_scheme(value: OwnedValue) -> Option<ColorScheme> {
-    let raw = u32::try_from(value.clone()).ok().or_else(|| {
-        i32::try_from(value)
-            .ok()
-            .and_then(|v| u32::try_from(v).ok())
-    })?;
+    let raw = value
+        .try_clone()
+        .ok()
+        .and_then(|v| u32::try_from(v).ok())
+        .or_else(|| {
+            value
+                .try_clone()
+                .ok()
+                .and_then(|v| i32::try_from(v).ok())
+                .and_then(|v| u32::try_from(v).ok())
+        })?;
 
     match raw {
         0 => Some(ColorScheme::NoPreference),
@@ -174,31 +180,37 @@ fn parse_color_scheme(value: OwnedValue) -> Option<ColorScheme> {
 }
 
 fn parse_accent_color(value: OwnedValue) -> Option<Rgba> {
-    if let Ok((r, g, b)) = <(f64, f64, f64)>::try_from(value.clone()) {
-        return Some(rgba(
-            normalize_channel(r as f32),
-            normalize_channel(g as f32),
-            normalize_channel(b as f32),
-            1.0,
-        ));
+    if let Ok(v) = value.try_clone() {
+        if let Ok((r, g, b)) = <(f64, f64, f64)>::try_from(v) {
+            return Some(rgba(
+                normalize_channel(r as f32),
+                normalize_channel(g as f32),
+                normalize_channel(b as f32),
+                1.0,
+            ));
+        }
     }
 
-    if let Ok((r, g, b, a)) = <(f64, f64, f64, f64)>::try_from(value.clone()) {
-        return Some(rgba(
-            normalize_channel(r as f32),
-            normalize_channel(g as f32),
-            normalize_channel(b as f32),
-            normalize_channel(a as f32),
-        ));
+    if let Ok(v) = value.try_clone() {
+        if let Ok((r, g, b, a)) = <(f64, f64, f64, f64)>::try_from(v) {
+            return Some(rgba(
+                normalize_channel(r as f32),
+                normalize_channel(g as f32),
+                normalize_channel(b as f32),
+                normalize_channel(a as f32),
+            ));
+        }
     }
 
-    if let Ok((r, g, b)) = <(f32, f32, f32)>::try_from(value.clone()) {
-        return Some(rgba(
-            normalize_channel(r),
-            normalize_channel(g),
-            normalize_channel(b),
-            1.0,
-        ));
+    if let Ok(v) = value.try_clone() {
+        if let Ok((r, g, b)) = <(f32, f32, f32)>::try_from(v) {
+            return Some(rgba(
+                normalize_channel(r),
+                normalize_channel(g),
+                normalize_channel(b),
+                1.0,
+            ));
+        }
     }
 
     if let Ok(components) = Vec::<f64>::try_from(value) {
