@@ -1,6 +1,9 @@
 // components
 
-use gpui::*;
+use gpui::{
+    AnyElement, App, Context, IntoElement, ParentElement, Render, Styled, Subscription, Window,
+    div,
+};
 use gpui_component::StyledExt;
 use tracing::info;
 
@@ -44,7 +47,7 @@ impl AppWindow {
 impl Render for AppWindow {
     fn render(
         &mut self,
-        _: &mut gpui::Window,
+        _: &mut Window,
         _cx: &mut Context<Self>,
     ) -> impl IntoElement {
         let content = self.content.as_ref().map(|f| f());

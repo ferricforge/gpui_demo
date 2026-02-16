@@ -252,59 +252,24 @@ impl Render for FileSelectionForm {
                 "Select Log Folder",
                 file_select_handler(&self.log_directory, "~/Desktop", &[], true),
             ))
-            .child(
-                h_flex()
-                    .items_center()
-                    .gap_5()
-                    .p(px(2.))
-                    .rounded_md()
-                    .border_1()
-                    .child(
-                        div()
-                            .min_w(px(100.)) // keeps rows aligned
-                            .text_align(TextAlign::Right)
-                            .child("Log Level:"),
-                    )
-                    .child(
-                        Select::new(&self.log_level_select)
-                            .w_full()
-                            .render(window, cx),
-                    ),
-            )
-            .child(
-                h_flex()
-                    .items_center()
-                    .gap_5()
-                    .p(px(2.))
-                    .rounded_md()
-                    .border_1()
-                    .child(
-                        div()
-                            .min_w(px(100.)) // keeps rows aligned
-                            .text_align(TextAlign::Right)
-                            .child("DB Backend:"),
-                    )
-                    .child(
-                        Select::new(&self.db_backend_select)
-                            .w_full()
-                            .render(window, cx),
-                    ),
-            )
-            .child(
-                h_flex()
-                    .items_center()
-                    .gap_5()
-                    .p(px(2.))
-                    .rounded_md()
-                    .border_1()
-                    .child(
-                        div()
-                            .min_w(px(100.)) // keeps rows aligned
-                            .text_align(TextAlign::Right)
-                            .child("Sheets:"),
-                    )
-                    .child(Select::new(&self.sheets_select).w_full().render(window, cx)),
-            )
+            .child(make_select_row(
+                "Log Level:",
+                Select::new(&self.log_level_select)
+                    .w_full()
+                    .render(window, cx),
+            ))
+            .child(make_select_row(
+                "DB Backend:",
+                Select::new(&self.db_backend_select)
+                    .w_full()
+                    .render(window, cx),
+            ))
+            .child(make_select_row(
+                "Sheets:",
+                Select::new(&self.sheets_select)
+                    .w_full()
+                    .render(window, cx),
+            ))
             .child(
                 v_flex()
                     .gap_4()
@@ -341,6 +306,15 @@ fn make_input_state(
     cx.new(|closure_cx| InputState::new(window, closure_cx).placeholder(label.into()))
 }
 
+/// Creates a labeled row containing a text label and an already-rendered
+/// [`Select`] dropdown, styled consistently with [`make_input_row`].
+fn make_select_row(
+    label: impl Into<SharedString>,
+    select_element: impl IntoElement,
+) -> Div {
+    make_labeled_row(label).child(select_element)
+}
+
 fn make_input_row(
     state: &Entity<InputState>,
     input_label: impl Into<SharedString>,
@@ -348,6 +322,14 @@ fn make_input_row(
     button_label: impl Into<SharedString>,
     button_callback: impl Fn(&ClickEvent, &mut Window, &mut App) + 'static,
 ) -> Div {
+    make_labeled_row(input_label)
+        .child(Input::new(state).flex_grow())
+        .child(make_button(button_id, button_label, button_callback))
+}
+
+/// Creates the common outer container and label used by both input and select
+/// rows, ensuring consistent alignment, spacing, and border styling.
+fn make_labeled_row(label: impl Into<SharedString>) -> Div {
     h_flex()
         .items_center()
         .gap_5()
@@ -356,18 +338,18 @@ fn make_input_row(
         .border_1()
         .child(
             div()
-                .min_w(px(100.)) // keeps rows aligned
+                .min_w(px(100.))
                 .text_align(TextAlign::Right)
-                .child(input_label.into()),
+                .child(label.into()),
         )
-        .child(
-            Input::new(state).flex_grow(), // input expands
-        )
-        .child(make_button(button_id, button_label, button_callback))
 }
 
 /// Creates a click handler that opens an async file dialog and populates the
 /// given input field with the selected path.
+///
+/// The outer closure captures owned copies of `input`, `directory`, and
+/// `filters`. Each click then clones these into an async task that runs
+/// the file dialog off the main thread and writes back via `async_window`.
 fn file_select_handler(
     input: &Entity<InputState>,
     directory: &str,
