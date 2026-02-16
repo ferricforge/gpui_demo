@@ -1,6 +1,6 @@
 use anyhow::Result;
 use chrono::Local;
-use tracing::{error, Event, Subscriber};
+use tracing::{error, Event, Level, Subscriber};
 use tracing_subscriber::{
     fmt::{
         format::{FormatEvent, FormatFields, Writer},
@@ -24,24 +24,42 @@ where
         event: &Event<'_>,
     ) -> std::fmt::Result {
         let meta = event.metadata();
+        let ansi = writer.has_ansi_escapes();
 
-        // Timestamp in local timezone with UTC offset
+        // Timestamp in local timezone, dimmed
+        if ansi { write!(writer, "\x1b[2m")? }
         write!(writer, "{} ", Local::now().format("%Y-%m-%dT%H:%M:%S%.6f%:z"))?;
+        if ansi { write!(writer, "\x1b[0m")? }
 
-        // Log level, right-aligned to 5 chars to match tracing's default width
-        write!(writer, "{:>5} ", meta.level())?;
+        // Level, colored by severity
+        let (pre, post) = if ansi {
+            match *meta.level() {
+                Level::ERROR => ("\x1b[1;31m", "\x1b[0m"), // bold red
+                Level::WARN  => ("\x1b[1;33m", "\x1b[0m"), // bold yellow
+                Level::INFO  => ("\x1b[1;32m", "\x1b[0m"), // bold green
+                Level::DEBUG => ("\x1b[1;34m", "\x1b[0m"), // bold blue
+                Level::TRACE => ("\x1b[1;35m", "\x1b[0m"), // bold magenta
+            }
+        } else {
+            ("", "")
+        };
+        write!(writer, "{}{:>5}{} ", pre, meta.level(), post)?;
 
-        // File path with src/ prefix stripped, and line number
+        // File path with src/ stripped, and line number, in cyan
         let file = meta.file().map(|f| {
             f.strip_prefix("src/")
                 .or_else(|| f.strip_prefix("src\\"))
                 .unwrap_or(f)
         });
         if let (Some(file), Some(line)) = (file, meta.line()) {
-            write!(writer, "{file}:{line} ")?;
+            if ansi {
+                write!(writer, "\x1b[36m{file}:{line}\x1b[0m ")?;
+            } else {
+                write!(writer, "{file}:{line} ")?;
+            }
         }
 
-        // Message and any structured fields (e.g. task = "...", ?error)
+        // Message and structured fields (e.g. task = "...", ?error)
         ctx.field_format().format_fields(writer.by_ref(), event)?;
         writeln!(writer)
     }
