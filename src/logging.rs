@@ -1,13 +1,11 @@
 use anyhow::Result;
 use chrono::Local;
+use std::{io::IsTerminal, path::Path, sync::Mutex};
 use tracing::{error, Event, Level, Subscriber};
 use tracing_subscriber::{
-    fmt::{
-        format::{FormatEvent, FormatFields, Writer},
-        FmtContext,
-    },
-    registry::LookupSpan,
-    EnvFilter,
+    EnvFilter, Layer, fmt::{
+        FmtContext, format::{FormatEvent, FormatFields, Writer}
+    }, layer::SubscriberExt, registry::LookupSpan, util::SubscriberInitExt
 };
 
 struct LocalFmt;
@@ -24,14 +22,16 @@ where
         event: &Event<'_>,
     ) -> std::fmt::Result {
         let meta = event.metadata();
+        // has_ansi_escapes() is now reliable because we set with_ansi()
+        // explicitly on every layer below — it never falls back to a guess.
         let ansi = writer.has_ansi_escapes();
 
-        // Timestamp in local timezone, dimmed
+        // Timestamp — dimmed
         if ansi { write!(writer, "\x1b[2m")? }
         write!(writer, "{} ", Local::now().format("%Y-%m-%dT%H:%M:%S%.6f%:z"))?;
         if ansi { write!(writer, "\x1b[0m")? }
 
-        // Level, colored by severity
+        // Level — bold + color by severity
         let (pre, post) = if ansi {
             match *meta.level() {
                 Level::ERROR => ("\x1b[1;31m", "\x1b[0m"), // bold red
@@ -45,7 +45,7 @@ where
         };
         write!(writer, "{}{:>5}{} ", pre, meta.level(), post)?;
 
-        // File path with src/ stripped, and line number, in cyan
+        // File and line — cyan
         let file = meta.file().map(|f| {
             f.strip_prefix("src/")
                 .or_else(|| f.strip_prefix("src\\"))
@@ -59,25 +59,61 @@ where
             }
         }
 
-        // Message and structured fields (e.g. task = "...", ?error)
+        // Message and any structured fields
         ctx.field_format().format_fields(writer.by_ref(), event)?;
         writeln!(writer)
     }
 }
 
-/// Initializes a default tracing subscriber for local development.
-///
-/// This setup is intentionally lightweight and no-op safe: if the host
-/// application has already installed a global subscriber, this function does
-/// nothing so external logging configuration can take precedence.
-pub fn init_default_logging() {
-    let filter = EnvFilter::try_from_default_env()
-        .unwrap_or_else(|_| EnvFilter::new("info,gpui_demo=debug"));
+fn make_filter() -> EnvFilter {
+    EnvFilter::try_from_default_env()
+        .unwrap_or_else(|_| EnvFilter::new("info,gpui_demo=debug"))
+}
 
-    let _ = tracing_subscriber::fmt()
-        .with_env_filter(filter)
+/// Initializes logging to stdout only.
+///
+/// ANSI colors are enabled only when stdout is a real terminal, so piping
+/// or redirecting (`> file.log`) automatically produces plain text.
+pub fn init_default_logging() {
+    let layer = tracing_subscriber::fmt::layer()
         .event_format(LocalFmt)
+        .with_ansi(std::io::stdout().is_terminal()) // explicit — no guessing
+        .with_filter(make_filter());
+
+    let _ = tracing_subscriber::registry()
+        .with(layer)
         .try_init();
+}
+
+/// Initializes logging to stdout **and** a file simultaneously.
+///
+/// Stdout receives ANSI colors when it is a terminal. The file always
+/// receives plain text — no escape codes, readable in any editor.
+pub fn init_logging_with_file(log_path: &Path) -> Result<()> {
+    let log_file = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(log_path)?;
+
+    let stdout_layer = tracing_subscriber::fmt::layer()
+        .event_format(LocalFmt)
+        .with_ansi(std::io::stdout().is_terminal())
+        .with_filter(make_filter());
+
+    // Mutex<File> satisfies MakeWriter; tracing-subscriber has a built-in
+    // impl for it. File alone is Send but not Sync, so the Mutex is required.
+    let file_layer = tracing_subscriber::fmt::layer()
+        .event_format(LocalFmt)
+        .with_ansi(false)
+        .with_writer(Mutex::new(log_file))
+        .with_filter(make_filter());
+
+    tracing_subscriber::registry()
+        .with(stdout_layer)
+        .with(file_layer)
+        .try_init()?;
+
+    Ok(())
 }
 
 /// Logs a background task failure with context.
