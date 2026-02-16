@@ -91,13 +91,31 @@ pub fn build_main_content(
                             let form_model = form_handle.read(cx).to_model(cx);
                             match form_model.validate_for_submit() {
                                 Ok(()) => {
-                                    // Apply the level before doing any work so subsequent
-                                    // log calls in this session use the user's choice.
-                                    // EnvFilter parsing is case-insensitive, so "INFO" and "info" both work.
-                                    if let Err(e) = logging::set_log_level(&form_model.log_level.to_string()) {
+                                    // Apply level first so subsequent calls in this session use it.
+                                    if let Err(e) = logging::set_log_level(&form_model.log_level.to_label()) {
                                         warn!("Could not apply log level: {e}");
                                     }
+
+                                    // Wire up file logging if a directory was provided.
+                                    if !form_model.log_directory.as_os_str().is_empty() {
+                                        // Use a timestamped name so runs don't overwrite each other.
+                                        let filename = format!(
+                                            "conversion_{}.log",
+                                            chrono::Local::now().format("%Y-%m-%d_%H-%M-%S")
+                                        );
+                                        let log_path = form_model.log_directory.join(filename);
+                                        if let Err(e) = logging::enable_file_logging(&log_path) {
+                                            warn!("Could not open log file: {e}");
+                                        }
+                                    }
+
+                                    // Honor the user's stdout preference.
+                                    if let Err(e) = logging::set_stdout_enabled(form_model.log_stdout) {
+                                        warn!("Could not configure stdout logging: {e}");
+                                    }
+
                                     info!(%form_model, "Form validated");
+                                    // Next step: pass validated model to the processing crate.
                                 }
                                 Err(errors) => {
                                     warn!("Cannot submit form due to validation errors");

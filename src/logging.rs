@@ -1,22 +1,25 @@
 use anyhow::Result;
 use chrono::Local;
 use std::{
-    io::IsTerminal,
+    fs::File,
+    io::{self, IsTerminal, Write},
     path::Path,
-    sync::{Mutex, OnceLock},
+    sync::{Arc, Mutex, MutexGuard, OnceLock},
 };
 use tracing::{error, Event, Level, Subscriber};
 use tracing_subscriber::{
     fmt::{
         format::{FormatEvent, FormatFields, Writer},
-        FmtContext,
+        FmtContext, MakeWriter,
     },
     layer::SubscriberExt,
     registry::LookupSpan,
     reload,
     util::SubscriberInitExt,
-    EnvFilter, Layer,  // <-- Layer added here; fixes the with_filter compile error
+    EnvFilter, Layer, // Layer is used by .with_filter() on the stdout layer below
 };
+
+// --- Formatter (unchanged) ---
 
 struct LocalFmt;
 
@@ -69,31 +72,53 @@ where
     }
 }
 
+// --- Late-bound file writer ---
+
+/// A MakeWriter that can be pointed at a file after initialization.
+/// While no file is set, all writes are silently discarded.
+#[derive(Clone)]
+struct FileSlot(Arc<Mutex<Option<File>>>);
+
+struct SlotWriter<'a>(MutexGuard<'a, Option<File>>);
+
+impl Write for SlotWriter<'_> {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        match &mut *self.0 {
+            Some(f) => f.write(buf),
+            None => Ok(buf.len()), // discard silently when no file is set
+        }
+    }
+    fn flush(&mut self) -> io::Result<()> {
+        match &mut *self.0 {
+            Some(f) => f.flush(),
+            None => Ok(()),
+        }
+    }
+}
+
+impl<'a> MakeWriter<'a> for FileSlot {
+    type Writer = SlotWriter<'a>;
+
+    fn make_writer(&'a self) -> Self::Writer {
+        SlotWriter(self.0.lock().unwrap())
+    }
+}
+
+// --- Statics ---
+
+type SetStrFn = Box<dyn Fn(&str) -> Result<()> + Send + Sync>;
+type SetBoolFn = Box<dyn Fn(bool) -> Result<()> + Send + Sync>;
+
+static SET_LOG_LEVEL: OnceLock<SetStrFn> = OnceLock::new();
+static SET_STDOUT_ENABLED: OnceLock<SetBoolFn> = OnceLock::new();
+static FILE_SLOT: OnceLock<Arc<Mutex<Option<File>>>> = OnceLock::new();
+
 fn make_filter() -> EnvFilter {
     EnvFilter::try_from_default_env()
         .unwrap_or_else(|_| EnvFilter::new("info,gpui_demo=debug"))
 }
 
-// Box the setter so the complex reload::Handle<EnvFilter, S> type
-// never leaks out of this module — callers just use set_log_level().
-type SetLevelFn = Box<dyn Fn(&str) -> Result<()> + Send + Sync>;
-static SET_LOG_LEVEL: OnceLock<SetLevelFn> = OnceLock::new();
-
-/// Changes the active log filter at runtime.
-///
-/// Accepts a bare level name ("error", "warn", "info", "debug", "trace")
-/// or any full `EnvFilter` directive (e.g. `"info,gpui_demo=debug"`).
-/// Level names are case-insensitive.
-pub fn set_log_level(level: &str) -> Result<()> {
-    match SET_LOG_LEVEL.get() {
-        Some(f) => f(level),
-        None => anyhow::bail!("logging not yet initialized"),
-    }
-}
-
-// Captures the handle in a closure and stores it, erasing the S type.
-// Called once after try_init() succeeds.
-fn store_handle<S>(handle: reload::Handle<EnvFilter, S>)
+fn store_level_handle<S>(handle: reload::Handle<EnvFilter, S>)
 where
     S: Subscriber + Send + Sync + 'static,
 {
@@ -106,54 +131,104 @@ where
     }));
 }
 
-/// Initializes logging to stdout only.
-pub fn init_default_logging() {
-    // The filter lives at the registry level so one handle covers all layers.
-    let (filter_layer, handle) = reload::Layer::new(make_filter());
+fn store_stdout_handle<S>(handle: reload::Handle<EnvFilter, S>)
+where
+    S: Subscriber + Send + Sync + 'static,
+{
+    let _ = SET_STDOUT_ENABLED.set(Box::new(move |enabled: bool| {
+        // "trace" passes everything through; the global filter is still the ceiling.
+        let filter = if enabled {
+            EnvFilter::new("trace")
+        } else {
+            EnvFilter::new("off")
+        };
+        handle
+            .reload(filter)
+            .map_err(|e| anyhow::anyhow!("stdout reload failed: {e}"))
+    }));
+}
 
-    let stdout_layer = tracing_subscriber::fmt::layer()
-        .event_format(LocalFmt)
-        .with_ansi(std::io::stdout().is_terminal());
+// --- Public API ---
 
-    if tracing_subscriber::registry()
-        .with(filter_layer)
-        .with(stdout_layer)
-        .try_init()
-        .is_ok()
-    {
-        store_handle(handle);
+/// Changes the active log filter at runtime.
+/// Accepts a bare level ("error", "warn", "info", "debug", "trace")
+/// or any full EnvFilter directive. Case-insensitive.
+pub fn set_log_level(level: &str) -> Result<()> {
+    match SET_LOG_LEVEL.get() {
+        Some(f) => f(level),
+        None => anyhow::bail!("logging not yet initialized"),
     }
 }
 
-/// Initializes logging to stdout and a file simultaneously.
-///
-/// Stdout receives ANSI colors when attached to a terminal.
-/// The file always receives plain text.
-pub fn init_logging_with_file(log_path: &Path) -> Result<()> {
-    let log_file = std::fs::OpenOptions::new()
+/// Shows or hides stdout log output without affecting file logging.
+pub fn set_stdout_enabled(enabled: bool) -> Result<()> {
+    match SET_STDOUT_ENABLED.get() {
+        Some(f) => f(enabled),
+        None => anyhow::bail!("logging not yet initialized"),
+    }
+}
+
+/// Starts writing log output to `path`. Safe to call after initialization.
+/// If a file is already open it is replaced.
+/// The directory must already exist.
+pub fn enable_file_logging(path: &Path) -> Result<()> {
+    let file = File::options()
         .create(true)
         .append(true)
-        .open(log_path)?;
+        .open(path)
+        .map_err(|e| anyhow::anyhow!("cannot open log file '{}': {e}", path.display()))?;
 
-    let (filter_layer, handle) = reload::Layer::new(make_filter());
+    match FILE_SLOT.get() {
+        Some(slot) => {
+            *slot.lock().unwrap() = Some(file);
+            Ok(())
+        }
+        None => anyhow::bail!("logging not yet initialized"),
+    }
+}
+
+/// Closes the current log file. Subsequent records go to stdout only
+/// (if stdout is enabled).
+pub fn disable_file_logging() {
+    if let Some(slot) = FILE_SLOT.get() {
+        *slot.lock().unwrap() = None;
+    }
+}
+
+/// Initializes logging. Call once at startup.
+///
+/// - Stdout: colored when attached to a terminal, plain when piped.
+/// - File: inactive until `enable_file_logging()` is called.
+/// - Level: INFO by default, or overridden by the RUST_LOG env var.
+pub fn init_default_logging() {
+    let file_inner: Arc<Mutex<Option<File>>> = Arc::new(Mutex::new(None));
+    let _ = FILE_SLOT.set(file_inner.clone());
+
+    // Per-stdout on/off filter; starts open ("trace"). Global filter is still the ceiling.
+    let (stdout_gate, stdout_handle) = reload::Layer::new(EnvFilter::new("trace"));
+    // Global level filter; controls both layers simultaneously.
+    let (level_filter, level_handle) = reload::Layer::new(make_filter());
 
     let stdout_layer = tracing_subscriber::fmt::layer()
         .event_format(LocalFmt)
-        .with_ansi(std::io::stdout().is_terminal());
+        .with_ansi(io::stdout().is_terminal())
+        .with_filter(stdout_gate); // Layer trait used here — import is not dead
 
     let file_layer = tracing_subscriber::fmt::layer()
         .event_format(LocalFmt)
         .with_ansi(false)
-        .with_writer(Mutex::new(log_file));
+        .with_writer(FileSlot(file_inner)); // discards until enable_file_logging() is called
 
-    tracing_subscriber::registry()
-        .with(filter_layer)  // one filter, controls both layers below
+    if tracing_subscriber::registry()
+        .with(level_filter)  // global level ceiling
         .with(stdout_layer)
         .with(file_layer)
-        .try_init()?;
-
-    store_handle(handle);
-    Ok(())
+        .try_init()
+        .is_ok()
+    {
+        store_level_handle(level_handle);
+        store_stdout_handle(stdout_handle);
+    }
 }
 
 /// Logs a background task failure with context.
