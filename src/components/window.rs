@@ -4,24 +4,27 @@ use gpui::*;
 use gpui_component::StyledExt;
 use tracing::info;
 
+#[cfg(not(target_os = "linux"))]
 use crate::Quit;
+#[cfg(not(target_os = "linux"))]
 use crate::quit;
 
 pub struct AppWindow {
-    _window_close_subscription: Option<Subscription>,
+    _window_close_subscription: Subscription,
     content: Option<Box<dyn Fn() -> AnyElement>>,
 }
 
 impl AppWindow {
     pub fn new(cx: &mut Context<Self>) -> Self {
-        let subscription = cx.on_window_closed(|cx: &mut App| {
+        let subscription = cx.on_window_closed(|_cx: &mut App| {
             info!("Window closed callback");
-            quit(&Quit, cx);
+            #[cfg(not(target_os = "linux"))]
+            quit(&Quit, _cx);
         });
 
         info!("Window constructed");
         Self {
-            _window_close_subscription: Some(subscription),
+            _window_close_subscription: subscription,
             content: None,
         }
     }
