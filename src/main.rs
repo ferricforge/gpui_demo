@@ -12,6 +12,24 @@ use gpui_demo::{
 };
 
 fn main() {
+    #[cfg(target_os = "linux")]
+    {
+        let is_gnome = std::env::var("XDG_CURRENT_DESKTOP")
+            .map(|d| d.to_ascii_lowercase().contains("gnome"))
+            .unwrap_or(false);
+        let has_x11_display = std::env::var_os("DISPLAY").is_some();
+        let has_wayland_display = std::env::var_os("WAYLAND_DISPLAY").is_some();
+
+        if is_gnome && has_x11_display && has_wayland_display {
+            // SAFETY: This runs at process startup before any worker threads
+            // are started, so mutating process environment is confined to this
+            // single-threaded initialization phase.
+            unsafe {
+                std::env::remove_var("WAYLAND_DISPLAY");
+            }
+        }
+    }
+
     init_default_logging();
 
     let app = Application::new().with_assets(Assets);
@@ -22,7 +40,7 @@ fn main() {
         let prefs = WindowPreferences::default();
 
         let titlebar = Some(TitlebarOptions {
-            title: Some("TimeKeeper".into()),
+            title: Some("TimeKeeper Loader".into()),
             appears_transparent: false,
             ..Default::default()
         });
