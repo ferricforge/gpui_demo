@@ -202,17 +202,6 @@ fn parse_accent_color(value: OwnedValue) -> Option<Rgba> {
         }
     }
 
-    if let Ok(v) = value.try_clone() {
-        if let Ok((r, g, b)) = <(f32, f32, f32)>::try_from(v) {
-            return Some(rgba(
-                normalize_channel(r),
-                normalize_channel(g),
-                normalize_channel(b),
-                1.0,
-            ));
-        }
-    }
-
     if let Ok(components) = Vec::<f64>::try_from(value) {
         if components.len() >= 3 {
             return Some(rgba(
