@@ -29,8 +29,7 @@ objc2-app-kit = { version = "0.3", features = ["NSAppearance", "NSColor", "NSCol
 windows = { version = "0.62", features = ["Win32_UI_WindowsAndMessaging", "Win32_Graphics_Dwm", "Win32_System_Registry", "Win32_Foundation"] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
-gtk4 = "0.10"
-zbus = "4"
+zbus = "5"
 
 [dev-dependencies]
 pretty_assertions = "1.4.1"
