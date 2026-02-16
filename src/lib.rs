@@ -8,7 +8,7 @@ use gpui::{
     AnyElement, App, AppContext, Context, InteractiveElement, IntoElement, KeyBinding, Menu,
     MenuItem, ParentElement, Styled, Window, actions,
 };
-use gpui_component::{TitleBar, h_flex, v_flex};
+use gpui_component::{h_flex, v_flex};
 use tracing::{info, warn};
 
 use crate::components::{FileSelectionForm, make_button};
@@ -77,7 +77,6 @@ pub fn build_main_content(
             .size_full()
             .p_5()
             .gap_4()
-            .child(TitleBar::new().child(h_flex().w_full().child("TimeKeeper Loader")))
             .child(form.clone())
             .child(
                 h_flex()

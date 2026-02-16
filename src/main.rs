@@ -1,6 +1,6 @@
 use gpui::{
-    App, AppContext, Application, Bounds, Context, TitlebarOptions, WindowBounds, WindowHandle,
-    WindowOptions,
+    App, AppContext, Application, Bounds, Context, TitlebarOptions, WindowBounds,
+    WindowDecorations, WindowHandle, WindowOptions,
 };
 
 use gpui_component::Root;
@@ -37,6 +37,7 @@ fn main() {
                         WindowOptions {
                             window_bounds: Some(WindowBounds::Windowed(bounds)),
                             titlebar,
+                            window_decorations: Some(WindowDecorations::Server),
                             ..Default::default()
                         },
                         |window: &mut gpui::Window, window_cx| {
