@@ -12,6 +12,8 @@ use gpui_component::{TitleBar, h_flex, v_flex};
 use tracing::{info, warn};
 
 use crate::components::{FileSelectionForm, make_button};
+#[cfg(target_os = "linux")]
+use crate::platform::apply_linux_system_theme;
 #[cfg(target_os = "macos")]
 use crate::platform::apply_macos_system_theme;
 
@@ -32,6 +34,8 @@ pub fn setup_app(app_cx: &mut App) {
 
     #[cfg(target_os = "macos")]
     apply_macos_system_theme(app_cx);
+    #[cfg(target_os = "linux")]
+    apply_linux_system_theme(app_cx);
 
     app_cx.activate(true);
 
