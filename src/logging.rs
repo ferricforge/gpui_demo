@@ -109,6 +109,7 @@ impl<'a> MakeWriter<'a> for FileSlot {
 type SetStrFn = Box<dyn Fn(&str) -> Result<()> + Send + Sync>;
 type SetBoolFn = Box<dyn Fn(bool) -> Result<()> + Send + Sync>;
 
+static APP_NAME: OnceLock<String> = OnceLock::new();
 static SET_LOG_LEVEL: OnceLock<SetStrFn> = OnceLock::new();
 static SET_STDOUT_ENABLED: OnceLock<SetBoolFn> = OnceLock::new();
 static FILE_SLOT: OnceLock<Arc<Mutex<Option<File>>>> = OnceLock::new();
@@ -195,12 +196,28 @@ pub fn disable_file_logging() {
     }
 }
 
+/// Returns the process name derived from the executable path.
+/// Initialised on first call; always returns the same value.
+/// Falls back to "app" if the path cannot be determined.
+/// Exposed so a future preferences store can read it without re-deriving it.
+pub fn app_name() -> &'static str {
+    APP_NAME.get_or_init(|| {
+        std::env::current_exe()
+            .ok()
+            .and_then(|p| p.file_stem().map(|s| s.to_string_lossy().into_owned()))
+            .unwrap_or_else(|| "app".to_string())
+    })
+}
+
 /// Initializes logging. Call once at startup.
 ///
 /// - Stdout: colored when attached to a terminal, plain when piped.
 /// - File: inactive until `enable_file_logging()` is called.
 /// - Level: INFO by default, or overridden by the RUST_LOG env var.
 pub fn init_default_logging() {
+    // Initialise the name while we are still in a simple synchronous context.
+    let _ = app_name();
+
     let file_inner: Arc<Mutex<Option<File>>> = Arc::new(Mutex::new(None));
     let _ = FILE_SLOT.set(file_inner.clone());
 

@@ -92,18 +92,17 @@ pub fn build_main_content(
                             match form_model.validate_for_submit() {
                                 Ok(()) => {
                                     // Apply level first so subsequent calls in this session use it.
-                                    if let Err(e) = logging::set_log_level(&form_model.log_level.to_label()) {
+                                    if let Err(e) = logging::set_log_level(&form_model.log_level.to_string()) {
                                         warn!("Could not apply log level: {e}");
                                     }
 
                                     // Wire up file logging if a directory was provided.
                                     if !form_model.log_directory.as_os_str().is_empty() {
-                                        // Use a timestamped name so runs don't overwrite each other.
-                                        let filename = format!(
-                                            "conversion_{}.log",
-                                            chrono::Local::now().format("%Y-%m-%d_%H-%M-%S")
-                                        );
-                                        let log_path = form_model.log_directory.join(filename);
+                                        // app_name() is "gpui_demo" (or whatever the exe is called).
+                                        // The file is opened with append(true) so repeated clicks accumulate.
+                                        let log_path = form_model
+                                            .log_directory
+                                            .join(format!("{}.log", logging::app_name()));
                                         if let Err(e) = logging::enable_file_logging(&log_path) {
                                             warn!("Could not open log file: {e}");
                                         }
